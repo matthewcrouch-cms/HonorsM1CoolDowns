@@ -113,6 +113,8 @@ textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;m
 const CONFIG = {
   // Student feedback after submitting: "marks" shows right/not yet per item; "none" just confirms.
   feedback: "marks",
+  // PIN required to open the teacher view. Change the number between the quotes. Set to "" to turn the PIN off.
+  teacherPin: "2468",
   // Google Form wiring (used on GitHub Pages). Leave action empty for demo mode (browser storage only).
   form: {
     action: "https://docs.google.com/forms/d/e/1FAIpQLSdZUcGGDruMUqcUzluu7S2GQ96A3cDupu4iqdQd_-3m1pE0eQ/formResponse",
@@ -139,7 +141,8 @@ const cdsOf = unit => CD.filter(c => c.unit === unit);
 const pick = a => a[Math.floor(Math.random()*a.length)];
 const isScored = it => it.type !== "open" && it.scored !== false;
 
-const S = { view:"student", step:"pick", unit:UNITS[0].id, cd:CD[0].id, period:"4th Block", name:"", t:{unit:UNITS[0].id, cd:CD[0].id, period:"All"}, last:null, csv:"" };
+const U0 = (UNITS[0]||{}).id, C0 = (CD[0]||{}).id;
+const S = { view:"student", step:"pick", unit:U0, cd:C0, period:"4th Block", name:"", t:{unit:U0, cd:C0, period:"All"}, last:null, csv:"", unlocked:false, pinErr:false };
 
 /* storage */
 function loadLocal(){ try{ return JSON.parse(localStorage.getItem("cd_responses")||"[]"); }catch(e){ return []; } }
@@ -302,6 +305,7 @@ function breakdown(it, rs){
   return rows.map(r=>({...r, pct: n?Math.round(100*r.n/n):0}));
 }
 function renderTeacher(){
+  if(CONFIG.teacherPin && !S.unlocked){ return `<section class="card"><h2>Teacher view</h2><p class="sub">Enter the teacher PIN to see class results.</p><label class="f" for="pin">PIN</label><input type="password" id="pin" inputmode="numeric" autocomplete="off" aria-describedby="pinmsg"><p id="pinmsg" class="mark no" role="alert">${S.pinErr?"That PIN didn’t work. Try again.":""}</p><button class="btn" data-act="unlock">Unlock</button></section>`; }
   const c = getCD(S.t.cd), rs = latest(c.id, S.t.period), n = rs.length;
   const periods = ["All", ...Object.keys(CONFIG.roster)];
   let h = `
@@ -392,7 +396,14 @@ function addSample(){
 }
 
 /* ================= WIRING ================= */
+async function tryUnlock(){
+  const el = document.getElementById("pin");
+  if(el && el.value.trim() === String(CONFIG.teacherPin)){ S.unlocked = true; S.pinErr = false; await loadRemote(); render(); }
+  else { S.pinErr = true; render(); setTimeout(()=>{ const e=document.getElementById("pin"); if(e) e.focus(); },0); }
+}
+$app.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="pin") tryUnlock(); });
 function render(){
+  if(!UNITS.length){ $app.innerHTML = `<section class="card"><h2>The cool down files didn’t load</h2><p>This page needs the file <b>units/unit5.js</b>. It is missing or in the wrong place in your GitHub repository.</p><p class="sub">In the repository, the file must be named <b>unit5.js</b> and sit inside a folder named <b>units</b>, next to index.html.</p></section>`; return; }
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===S.view)));
   $app.innerHTML = S.view==="student" ? renderStudent() : renderTeacher();
 }
@@ -409,7 +420,8 @@ $app.addEventListener("change", e=>{
 document.addEventListener("click", async e=>{
   const el = e.target.closest("[data-act]"); if(!el) return;
   const a = el.dataset.act;
-  if(a==="view"){ S.view = el.dataset.v; if(S.view==="teacher") await loadRemote(); render(); }
+  if(a==="view"){ S.view = el.dataset.v; if(S.view==="student"){ S.unlocked=false; S.pinErr=false; } if(S.view==="teacher" && (S.unlocked||!CONFIG.teacherPin)) await loadRemote(); render(); }
+  else if(a==="unlock"){ tryUnlock(); }
   else if(a==="start"){ S.step="form"; render(); window.scrollTo(0,0); }
   else if(a==="submit") submitForm();
   else if(a==="refresh"){ el.textContent="Refreshing…"; await loadRemote(); render(); }
