@@ -47,7 +47,7 @@ const MIS_6S = "Multiplied 6·s without squaring";
   ]
 },
 {
-  id:"u5l3", title:"Lesson 3: Population of a City", keyStatus:"draft",
+  id:"u5l3", title:"Lesson 3: Population of a City", keyStatus:"final",
   intro:"The graph shows the population of a city from 1900 to 2000.",
   graph:{pts:[[1900,20],[1910,22],[1920,32],[1930,40],[1940,44],[1950,45],[1960,43],[1970,35],[1980,30],[1990,28],[2000,26]],xmin:1900,xmax:2000,xt:20,ymin:0,ymax:50,yt:10,xlab:"year",ylab:"population in thousands",alt:"Line graph of a city’s population in thousands from 1900 to 2000. It rises to about 45 thousand around 1950, then falls to about 26 thousand by 2000."},
   items:[
@@ -65,20 +65,20 @@ const MIS_6S = "Multiplied 6·s without squaring";
   ]
 },
 {
-  id:"u5l6", title:"Lesson 6: A Pot of Water", keyStatus:"draft",
+  id:"u5l6", title:"Lesson 6: A Pot of Water", keyStatus:"final",
   intro:"The function <i>W</i> gives the temperature, in degrees Fahrenheit, of a pot of water on a stove <i>t</i> minutes after the stove is turned on. After 30 minutes, the pot is taken off the stove.",
-  graph:{pts:[[0,70],[10,210],[15,210],[30,100]],xmin:0,xmax:30,xt:5,ymin:0,ymax:300,yt:50,xlab:"time (minutes)",ylab:"temperature (degrees Fahrenheit)",alt:"Line graph of water temperature over 30 minutes. It starts near 70 degrees, rises to 210 by minute 10, stays level until minute 15, then falls to about 100 by minute 30."},
+  graph:{pts:[[0,75],[10,212],[15,212],[30,100]],xmin:0,xmax:30,xt:5,ymin:0,ymax:300,yt:50,xlab:"time (minutes)",ylab:"temperature (degrees Fahrenheit)",alt:"Line graph of water temperature over 30 minutes. It starts at about 75 degrees, rises to 212 by minute 10, stays level until minute 15, then falls to about 100 by minute 30."},
   items:[
     {id:"u5l6_1",label:"1",stem:"Is 250 in the range of function <i>W</i>?",type:"mc",row:true,correct:"n",options:[{id:"y",t:"Yes",tag:"Used the axis limits instead of the graph"},{id:"n",t:"No"}]},
     {id:"u5l6_1b",label:"",stem:"How do you know?",type:"mc",correct:"a",options:[
-      {id:"a",t:"The graph never gets as high as 250 degrees"},
+      {id:"a",t:"The highest temperature is 212°F, so the graph never reaches 250"},
       {id:"b",t:"250 is on the temperature axis, so it is in the range",tag:"Used the axis limits instead of the graph"},
       {id:"c",t:"250 is more than the 30 minutes the pot was on the stove",tag:"Mixed up domain and range"}]},
     {id:"u5l6_2",label:"2",stem:"Describe the range of the function.",type:"mc",correct:"a",options:[
-      {id:"a",t:"All temperatures from about 70°F to 210°F"},
+      {id:"a",t:"All temperatures from 75°F to 212°F"},
       {id:"b",t:"All times from 0 to 30 minutes",tag:"Described the domain, not the range"},
       {id:"c",t:"All temperatures from 0°F to 300°F",tag:"Used the axis limits instead of the graph"},
-      {id:"d",t:"Only the temperatures 70°F and 100°F",tag:"Used only the first and last points"}]},
+      {id:"d",t:"Only the temperatures 75°F and 100°F",tag:"Used only the first and last points"}]},
     {id:"u5l6_3",label:"3",stem:"Is there a value of <i>t</i> that makes <i>W</i>(<i>t</i>) = 0 true?",type:"mc",row:true,correct:"n",options:[{id:"y",t:"Yes",tag:"Looked at t = 0 instead of W(t) = 0"},{id:"n",t:"No"}]},
     {id:"u5l6_3b",label:"",stem:"How do you know?",type:"mc",correct:"a",options:[
       {id:"a",t:"The temperature is never 0°F on the graph"},
