@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Math 1 Cool Downs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F7FA; --surface:#FFFFFF; --ink:#14213D; --muted:#56637D; --line:#D5DDE8;
+  --blue:#4B9CD3; --blue-ink:#1F6FA3; --orange:#F56600; --orange-ink:#B84A00;
+  --good-bg:#E3F1FA; --warn-bg:#FFF0E3; --grid:#DCE3EC; --neutral:#A9B4C6;
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1626; --surface:#18223A; --ink:#EAF0F8; --muted:#9FB0CA; --line:#2C3955;
+    --blue:#6DB4E6; --blue-ink:#8CC6F0; --orange:#FF8A3D; --orange-ink:#FFA466;
+    --good-bg:#16324A; --warn-bg:#3A2514; --grid:#2A3652; --neutral:#5E6C88; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1626; --surface:#18223A; --ink:#EAF0F8; --muted:#9FB0CA; --line:#2C3955;
+  --blue:#6DB4E6; --blue-ink:#8CC6F0; --orange:#FF8A3D; --orange-ink:#FFA466;
+  --good-bg:#16324A; --warn-bg:#3A2514; --grid:#2A3652; --neutral:#5E6C88; color-scheme: dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+h1,h2,h3{font-family:"Bricolage Grotesque","Atkinson Hyperlegible",system-ui,sans-serif;line-height:1.15;margin:0}
+.bar{background:var(--surface);border-bottom:4px solid var(--blue);}
+.bar-in{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.brand{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:1.35rem}
+.brand small{font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-weight:400;font-size:.9rem;color:var(--muted);margin-left:8px}
+.tabs{display:flex;gap:4px}
+.tab{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;padding:8px 16px;border-radius:8px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+main{max-width:980px;margin:0 auto;padding:24px 20px 64px}
+.demo{background:var(--warn-bg);border-left:4px solid var(--orange);padding:10px 14px;border-radius:6px;font-size:.92rem;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin-bottom:18px}
+.card h2{font-size:1.5rem;margin-bottom:6px}
+.sub{color:var(--muted);margin:0 0 14px}
+label.f{display:block;font-weight:700;margin:14px 0 6px}
+select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:84px;resize:vertical}
+select:focus,input:focus,textarea:focus,button:focus-visible,.opt:has(input:focus-visible){outline:3px solid var(--orange);outline-offset:2px}
+.btn{appearance:none;border:0;background:var(--ink);color:var(--surface);font:inherit;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer;margin-top:18px}
+.btn.alt{background:transparent;color:var(--ink);border:2px solid var(--line);margin-top:0;padding:8px 14px;font-weight:400}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.who{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.95rem;margin-bottom:6px}
+.item{padding:18px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.gstem{font-weight:700;margin:18px 0 -6px}
+.stem{margin:0 0 10px}
+.lab{display:inline-block;min-width:2.2em;font-weight:700;color:var(--blue-ink)}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg)}
+.opt:has(input:checked){border-color:var(--blue);background:var(--good-bg)}
+.opt input{margin-top:5px;accent-color:var(--blue-ink)}
+.opts.row{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.unit{color:var(--muted);font-size:.9rem;margin-top:4px}
+.graph{margin:6px 0 4px;max-width:480px}
+.graph svg{width:100%;height:auto;display:block}
+.mark{font-weight:700}
+.mark.ok{color:var(--blue-ink)} .mark.no{color:var(--orange-ink)}
+/* teacher */
+.ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:18px}
+.ctl > div{min-width:180px;flex:1}
+.ctl label.f{margin-top:0}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px;margin:4px 0 0}
+.stat b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.8rem;display:block;line-height:1}
+.stat span{color:var(--muted);font-size:.9rem}
+.mis{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.mis li{display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:4px 12px;align-items:center}
+.track{height:12px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;background:var(--orange)}
+.fill.c{background:var(--blue)} .fill.n{background:var(--neutral)}
+.cnt{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.bk{display:grid;gap:10px;margin-top:10px}
+.bkrow{display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:4px 12px;align-items:center}
+.bkrow .tg{display:block;color:var(--orange-ink);font-size:.88rem}
+.ih{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+.pct{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:1.4rem}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.col{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
+.col h3{font-size:1.05rem;margin-bottom:4px}
+.col ul{margin:6px 0 0;padding-left:18px}
+.col.g{border-top:4px solid var(--blue)} .col.a{border-top:4px solid var(--neutral)} .col.n{border-top:4px solid var(--orange)}
+.empty{color:var(--muted);padding:18px;border:2px dashed var(--line);border-radius:10px;text-align:center}
+.open li{margin-bottom:8px}
+.open .nm{color:var(--muted);font-size:.88rem}
+details summary{cursor:pointer;font-weight:700}
+textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;min-height:140px;margin-top:10px}
+@media (max-width:560px){.bkrow{grid-template-columns:minmax(0,1fr) 80px 38px}}
+@media (prefers-reduced-motion: no-preference){.fill{transition:width .4s ease}}
+</style>
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <div class="brand">Cool Downs<small>Math 1</small></div>
+  <nav class="tabs" aria-label="View">
+    <button class="tab" data-act="view" data-v="student" aria-pressed="true">Student view</button>
+    <button class="tab" data-act="view" data-v="teacher" aria-pressed="false">Teacher view</button>
+  </nav>
+</div></header>
+<main id="app"></main>
+
+<script src="units/unit5.js"></script>
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  // Student feedback after submitting: "marks" shows right/not yet per item; "none" just confirms.
+  feedback: "marks",
+  // Google Form wiring (used on GitHub Pages). Leave action empty for demo mode (browser storage only).
+  form: {
+    action: "https://docs.google.com/forms/d/e/1FAIpQLSdZUcGGDruMUqcUzluu7S2GQ96A3cDupu4iqdQd_-3m1pE0eQ/formResponse",
+    fields: { cooldown: "entry.1241225437", period: "entry.2007958280", name: "entry.2054667440", answers: "entry.1980489109" }
+  },
+  // "Publish to web" CSV link of the Form’s response sheet. Leave empty for demo mode.
+  resultsCsv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTz3qu3C2adCc8Osxc7zgBVo95qA2IQSeSyHZ3jVrZpnrAGSzcTO4tl2Sp1wYW-2CgNqCTJ3pkwaMcI/pub?gid=1233888133&single=true&output=csv",
+  roster: {
+    "4th Block": ["Asha R.","Aubrey J.","Brody J.","Celeste M.","Crystal S.","Daniel G.","Dario H.","Davien T.","Destiny B.","Ellis W.","Gracie D.","Isaiah T.","Jackson P.","Patrick M.","Paula N.","Theo H.","Uchechi N.","Valentino D.","Yaduraj P.","Zoie N."]
+  }
+};
+
+/* ================= COOL DOWN DATA ================= */
+const UNITS = window.UNITS || [];
+const CD = UNITS.flatMap(u=>u.cds.map(c=>({...c,unit:u.id})));
+
+/* ================= HELPERS ================= */
+const $app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const strip = s => String(s).replace(/<[^>]+>/g,"");
+const norm = s => String(s).toLowerCase().replace(/\s+/g,"").replace(/[−–]/g,"-").replace(/×/g,"*");
+const getCD = id => CD.find(c => c.id === id);
+const cdsOf = unit => CD.filter(c => c.unit === unit);
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const isScored = it => it.type !== "open" && it.scored !== false;
+
+const S = { view:"student", step:"pick", unit:UNITS[0].id, cd:CD[0].id, period:"4th Block", name:"", t:{unit:UNITS[0].id, cd:CD[0].id, period:"All"}, last:null, csv:"" };
+
+/* storage */
+function loadLocal(){ try{ return JSON.parse(localStorage.getItem("cd_responses")||"[]"); }catch(e){ return []; } }
+function saveLocal(r){ try{ localStorage.setItem("cd_responses", JSON.stringify(r)); return true; }catch(e){ return false; } }
+let RESP = CONFIG.form.action ? [] : loadLocal();
+
+async function sendRemote(rec){
+  const f = CONFIG.form; if(!f.action) return;
+  const body = new URLSearchParams();
+  body.set(f.fields.cooldown, rec.cd); body.set(f.fields.period, rec.period);
+  body.set(f.fields.name, rec.name); body.set(f.fields.answers, JSON.stringify(rec.answers));
+  try{ await fetch(f.action,{method:"POST",mode:"no-cors",body}); }catch(e){}
+}
+function parseCsv(t){
+  const rows=[];let row=[],cur="",q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"') q=true; else if(c===","){row.push(cur);cur="";}
+    else if(c==="\n"){row.push(cur);rows.push(row);row=[];cur="";} else if(c!=="\r") cur+=c;
+  }
+  if(cur||row.length){row.push(cur);rows.push(row);} return rows;
+}
+function parseResp(t){
+  return parseCsv(t).slice(1).filter(x=>x.length>=5).map(x=>{ let a={}; try{a=JSON.parse(x[4]);}catch(e){} return {ts:Date.parse(x[0])||0, cd:x[1], period:x[2], name:x[3], answers:a}; });
+}
+async function loadRemote(){
+  if(!CONFIG.resultsCsv) return;
+  try{
+    const u = CONFIG.resultsCsv + (CONFIG.resultsCsv.includes("?")?"&":"?") + "t=" + Date.now();
+    const r = await fetch(u,{cache:"no-store"}); if(!r.ok) throw new Error("bad response");
+    RESP = parseResp(await r.text()); S.loadErr = "";
+  }catch(e){ S.loadErr = "Couldn’t load live results. Check your connection and choose Refresh results, or load a CSV file instead."; }
+}
+
+/* scoring */
+function score(it, a){
+  const blank = a===undefined || a===null || String(a).trim()==="";
+  if(!isScored(it)) return {correct:null, key: blank?"__blank":(it.type==="mc"?a:"__open")};
+  if(blank) return {correct:false, key:"__blank", tag:"No answer"};
+  if(it.type==="mc"){
+    const o = it.options.find(o=>o.id===a);
+    return {correct:a===it.correct, key:a, tag:(a===it.correct?null:(o&&o.tag)||"Other answer")};
+  }
+  if(it.type==="num"){
+    const m = String(a).replace(/,/g,"").match(/-?\d*\.?\d+/);
+    if(!m) return {correct:false,key:"__other",tag:"Other answer"};
+    const v = parseFloat(m[0]);
+    if(it.accepted.some(x=>Math.abs(x-v) <= (it.tol||0.001))) return {correct:true,key:"__correct"};
+    const w = it.wrong.find(w=>Math.abs(w.v-v) <= 0.001);
+    return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
+  }
+  if(it.type==="text"){
+    const n = norm(a);
+    if(it.accepted.includes(n)) return {correct:true,key:"__correct"};
+    const w = it.wrong.find(w=>w.m===n);
+    return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
+  }
+  return {correct:null,key:"__open"};
+}
+function pctFor(c, answers){
+  const sc = c.items.filter(isScored); if(!sc.length) return 0;
+  return Math.round(100*sc.filter(it=>score(it,answers[it.id]).correct).length/sc.length);
+}
+function latest(cdId, period){
+  const m = new Map();
+  RESP.filter(r=>r.cd===cdId && (period==="All"||r.period===period)).sort((a,b)=>a.ts-b.ts).forEach(r=>m.set(r.period+"|"+r.name,r));
+  return [...m.values()];
+}
+
+/* graph */
+function graphSvg(g){
+  const W=440,H=270,L=58,R=14,T=12,B=46;
+  const sx=x=>L+(x-g.xmin)/(g.xmax-g.xmin)*(W-L-R), sy=y=>H-B-(y-g.ymin)/(g.ymax-g.ymin)*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(g.alt)}">`;
+  for(let x=g.xmin;x<=g.xmax;x+=g.xt){ s+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H-B}" stroke="var(--grid)"/><text x="${sx(x)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${x}</text>`; }
+  for(let y=g.ymin;y<=g.ymax;y+=g.yt){ s+=`<line x1="${L}" x2="${W-R}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--grid)"/><text x="${L-6}" y="${sy(y)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${y}</text>`; }
+  s+=`<line x1="${L}" x2="${L}" y1="${T}" y2="${H-B}" stroke="var(--muted)"/><line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="var(--muted)"/>`;
+  s+=`<polyline fill="none" stroke="var(--blue-ink)" stroke-width="2.5" stroke-linejoin="round" points="${g.pts.map(p=>sx(p[0])+","+sy(p[1])).join(" ")}"/>`;
+  s+=`<text x="${(L+W-R)/2}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.xlab)}</text>`;
+  s+=`<text transform="translate(14 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.ylab)}</text></svg>`;
+  return `<div class="graph">${s}</div>`;
+}
+
+/* ================= STUDENT VIEW ================= */
+function renderStudent(){
+  if(S.step==="pick"){
+    const names = CONFIG.roster[S.period]||[];
+    if(!names.includes(S.name)) S.name = "";
+    return `
+    ${CONFIG.form.action?"":`<div class="demo"><b>Demo mode.</b> Responses are saved only in this browser. When this is on GitHub Pages and connected to your Google Form, they go to your Sheet instead. The Lesson 3 and Lesson 6 answer keys are still drafts.</div>`}
+    <section class="card">
+      <h2>Today’s cool down</h2>
+      <p class="sub">Pick your class and your name, then start.</p>
+      <label class="f" for="selunit">Unit</label>
+      <select id="selunit" data-bind="unit">${UNITS.map(u=>`<option value="${u.id}" ${u.id===S.unit?"selected":""}>${esc(u.title)}</option>`).join("")}</select>
+      <label class="f" for="selcd">Cool down</label>
+      <select id="selcd" data-bind="cd">${cdsOf(S.unit).map(c=>`<option value="${c.id}" ${c.id===S.cd?"selected":""}>${esc(c.title)}</option>`).join("")}</select>
+      <label class="f" for="selper">Class period</label>
+      <select id="selper" data-bind="period">${Object.keys(CONFIG.roster).map(p=>`<option ${p===S.period?"selected":""}>${p}</option>`).join("")}</select>
+      <label class="f" for="selname">Your name</label>
+      <select id="selname" data-bind="name"><option value="">Choose your name</option>${names.map(n=>`<option ${n===S.name?"selected":""}>${esc(n)}</option>`).join("")}</select>
+      <button class="btn" data-act="start" ${S.name?"":"disabled"}>Start cool down</button>
+    </section>`;
+  }
+  const c = getCD(S.cd);
+  if(S.step==="form"){
+    return `
+    <section class="card">
+      <h2>${esc(c.title)}</h2>
+      <div class="who"><span>${esc(S.name)}</span><span>${esc(S.period)}</span></div>
+      <p>${c.intro}</p>
+      ${c.graph?graphSvg(c.graph):""}
+      ${c.items.map(renderItem).join("")}
+      <button class="btn" data-act="submit">Submit cool down</button>
+    </section>`;
+  }
+  // done
+  const rec = S.last, marks = CONFIG.feedback==="marks";
+  const sc = c.items.filter(isScored);
+  return `
+  <section class="card">
+    <h2>Submitted. Nice work, ${esc(S.name.split(" ")[0])}.</h2>
+    <p class="sub">Your answers were sent to your teacher.</p>
+    ${marks?`<div>${sc.map(it=>{const r=score(it,rec.answers[it.id]);return `<p><span class="lab">${esc(it.label||"")}</span> <span class="mark ${r.correct?"ok":"no"}">${r.correct?"Got it":"Not yet"}</span> <span class="sub">${strip(it.stem).slice(0,70)}</span></p>`}).join("")}</div>`:""}
+    <button class="btn" data-act="again">Back to start</button>
+  </section>`;
+}
+function renderItem(it){
+  let h = it.groupStem ? `<p class="gstem">${it.groupStem}</p>` : "";
+  h += `<div class="item"><p class="stem">${it.label?`<span class="lab">${it.label}</span>`:""}${it.stem}</p>`;
+  if(it.type==="mc") h += `<div class="opts ${it.row?"row":""}">${it.options.map(o=>`<label class="opt"><input type="radio" name="${it.id}" value="${o.id}"><span>${o.t}</span></label>`).join("")}</div>`;
+  else if(it.type==="open") h += `<textarea name="${it.id}" aria-label="Your answer"></textarea>`;
+  else h += `<input type="text" name="${it.id}" autocomplete="off" inputmode="${it.type==="num"?"decimal":"text"}" placeholder="${esc(it.ph||"Type your answer")}" aria-label="Your answer">${it.unit?`<div class="unit">${esc(it.unit)}</div>`:""}`;
+  return h + `</div>`;
+}
+async function submitForm(){
+  const c = getCD(S.cd), answers = {};
+  c.items.forEach(it=>{
+    if(it.type==="mc"){ const el=$app.querySelector(`input[name="${it.id}"]:checked`); answers[it.id]=el?el.value:""; }
+    else { const el=$app.querySelector(`[name="${it.id}"]`); answers[it.id]=el?el.value.trim():""; }
+  });
+  const rec = {ts:Date.now(), cd:S.cd, period:S.period, name:S.name, answers};
+  if(CONFIG.form.action){ await sendRemote(rec); } else { RESP.push(rec); saveLocal(RESP); }
+  S.last = rec; S.step = "done"; render(); window.scrollTo(0,0);
+}
+
+/* ================= TEACHER VIEW ================= */
+function breakdown(it, rs){
+  const n = rs.length, rows = [];
+  const cnt = {}; rs.forEach(r=>{const k=score(it,r.answers[it.id]).key; cnt[k]=(cnt[k]||0)+1;});
+  if(it.type==="mc"){
+    it.options.forEach(o=>rows.push({label:o.t, tag:o.tag, n:cnt[o.id]||0, kind: !isScored(it)?"n":(o.id===it.correct?"c":"w")}));
+  } else if(isScored(it)){
+    rows.push({label:"Correct answer", n:cnt["__correct"]||0, kind:"c"});
+    const tags = [...new Set(it.wrong.map(w=>w.tag))];
+    tags.forEach(t=>rows.push({label:t, n:cnt["t:"+t]||0, kind:"w"}));
+    rows.push({label:"Other answer", n:cnt["__other"]||0, kind:"n"});
+  }
+  if(isScored(it)||it.type==="mc") rows.push({label:"No answer", n:cnt["__blank"]||0, kind:"n"});
+  return rows.map(r=>({...r, pct: n?Math.round(100*r.n/n):0}));
+}
+function renderTeacher(){
+  const c = getCD(S.t.cd), rs = latest(c.id, S.t.period), n = rs.length;
+  const periods = ["All", ...Object.keys(CONFIG.roster)];
+  let h = `
+  <section class="card">
+    <h2>Class results</h2>
+    <div class="ctl">
+      <div><label class="f" for="tunit">Unit</label><select id="tunit" data-bind="t.unit">${UNITS.map(u=>`<option value="${u.id}" ${u.id===S.t.unit?"selected":""}>${esc(u.title)}</option>`).join("")}</select></div>
+      <div><label class="f" for="tcd">Cool down</label><select id="tcd" data-bind="t.cd">${cdsOf(S.t.unit).map(x=>`<option value="${x.id}" ${x.id===c.id?"selected":""}>${esc(x.title)}</option>`).join("")}</select></div>
+      <div><label class="f" for="tper">Class</label><select id="tper" data-bind="t.period">${periods.map(p=>`<option ${p===S.t.period?"selected":""}>${p}</option>`).join("")}</select></div>
+      ${CONFIG.form.action ? `${CONFIG.resultsCsv?`<button class="btn alt" data-act="refresh">Refresh results</button>`:""}<div><label class="f" for="resfile">Results file (CSV from your Sheet)</label><input type="file" id="resfile" accept=".csv,text/csv"></div>` : `<button class="btn alt" data-act="sample">Add sample responses</button><button class="btn alt" data-act="clear">Clear this cool down</button>`}
+    </div>
+    ${S.loadErr?`<div class="demo">${S.loadErr}</div>`:""}
+    ${c.keyStatus==="draft"?`<div class="demo"><b>Draft answer key.</b> I read this key from the graph. Confirm it before using these scores.</div>`:""}`;
+  if(!n){
+    return h + `<div class="empty">${CONFIG.resultsCsv ? "No responses yet for this cool down. Choose Refresh results to check again." : CONFIG.form.action ? "No responses loaded for this cool down. In your Google Sheet, choose File, Download, Comma-separated values (.csv), then pick that file above." : "No responses yet for this cool down. Have a student submit one in Student view, or add sample responses to see how this page works."}</div></section>`;
+  }
+  const scored = c.items.filter(isScored);
+  const avg = Math.round(rs.reduce((s,r)=>s+pctFor(c,r.answers),0)/n);
+  h += `<div class="stats"><div class="stat"><b>${n}</b><span>students submitted</span></div><div class="stat"><b>${avg}%</b><span>class average</span></div></div></section>`;
+
+  // groups
+  const G = {g:[],a:[],n:[]};
+  rs.forEach(r=>{const p=pctFor(c,r.answers); (p>=80?G.g:p>=50?G.a:G.n).push({name:r.name,p});});
+  const col=(k,t,d)=>`<div class="col ${k}"><h3>${t} (${G[k].length})</h3><span class="sub">${d}</span><ul>${G[k].sort((a,b)=>a.p-b.p).map(s=>`<li>${esc(s.name)} <span class="sub">${s.p}%</span></li>`).join("")||"<li class='sub'>None</li>"}</ul></div>`;
+  h += `<section class="card"><h2>Who’s ready</h2><p class="sub">Based on the scored items.</p><div class="cols">${col("n","Not yet","Under 50%")}${col("a","Almost","50% to 79%")}${col("g","Got it","80% or higher")}</div></section>`;
+
+  // misconceptions
+  const mc = {};
+  scored.forEach(it=>rs.forEach(r=>{const s=score(it,r.answers[it.id]); if(s.correct===false && s.tag && !["Other answer","No answer"].includes(s.tag)) mc[s.tag]=(mc[s.tag]||0)+1;}));
+  const top = Object.entries(mc).sort((a,b)=>b[1]-a[1]).slice(0,5), mx = top.length?top[0][1]:1;
+  h += `<section class="card"><h2>Most common misconceptions</h2><p class="sub">Counts of wrong answers that match a known misconception, across all items.</p>${top.length?`<ul class="mis">${top.map(([t,k])=>`<li><div>${esc(t)}<div class="track"><div class="fill" style="width:${Math.round(100*k/mx)}%"></div></div></div><span class="cnt">${k}</span></li>`).join("")}</ul>`:`<div class="empty">No misconception patterns yet.</div>`}</section>`;
+
+  // items
+  h += `<section class="card"><h2>Item by item</h2>`;
+  c.items.filter(it=>it.type!=="open").forEach(it=>{
+    const rows = breakdown(it, rs);
+    const right = isScored(it)? rs.filter(r=>score(it,r.answers[it.id]).correct).length : null;
+    h += `<div class="item"><div class="ih"><p class="stem"><span class="lab">${esc(it.label||"")}</span>${it.stem}</p>${right!==null?`<span class="pct">${Math.round(100*right/n)}% <span class="sub">(${right} of ${n})</span></span>`:`<span class="sub">Not scored</span>`}</div>
+      <div class="bk">${rows.map(r=>`<div class="bkrow"><div>${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span></div>`).join("")}</div></div>`;
+  });
+  h += `</section>`;
+
+  // open responses
+  const opens = c.items.filter(it=>it.type==="open");
+  if(opens.length){
+    h += `<section class="card"><h2>Written responses</h2>${opens.map(it=>`<div class="item"><p class="stem">${it.stem}</p><ul class="open">${rs.filter(r=>(r.answers[it.id]||"").trim()).map(r=>`<li>${esc(r.answers[it.id])} <span class="nm">${esc(r.name)}</span></li>`).join("")||"<li class='sub'>No written responses.</li>"}</ul></div>`).join("")}</section>`;
+  }
+
+  // export
+  h += `<section class="card"><h2>Export</h2><p class="sub">One row per student, for your gradebook or a spreadsheet.</p><button class="btn alt" data-act="csv">Show CSV</button>${S.csv?`<textarea class="csv" readonly aria-label="CSV export">${esc(S.csv)}</textarea><button class="btn alt" style="margin-top:10px" data-act="copy">Copy to clipboard</button>`:""}</section>`;
+  return h;
+}
+function buildCsv(){
+  const c = getCD(S.t.cd), rs = latest(c.id, S.t.period), q = v=>`"${String(v).replace(/"/g,'""')}"`;
+  const its = c.items.filter(it=>it.type!=="open"||true);
+  const head = ["Time","Cool down","Period","Name","Score %"];
+  its.forEach(it=>{head.push((it.label||it.id)+" answer"); if(isScored(it)) head.push((it.label||it.id)+" correct");});
+  const lines = [head.map(q).join(",")];
+  rs.forEach(r=>{
+    const row=[new Date(r.ts).toLocaleString(), c.title, r.period, r.name, pctFor(c,r.answers)];
+    its.forEach(it=>{
+      const a=r.answers[it.id]||""; const o = it.type==="mc"?it.options.find(o=>o.id===a):null;
+      row.push(o?strip(o.t):a); if(isScored(it)) row.push(score(it,a).correct?1:0);
+    });
+    lines.push(row.map(q).join(","));
+  });
+  return lines.join("\n");
+}
+
+/* sample data */
+function addSample(){
+  const c = getCD(S.t.cd);
+  Object.entries(CONFIG.roster).forEach(([period,names])=>{
+    names.forEach(name=>{
+      if(Math.random()<.1) return;
+      const ability = .3 + Math.random()*.65, answers = {};
+      c.items.forEach(it=>{
+        const good = Math.random()<ability;
+        if(it.type==="open") answers[it.id] = Math.random()<.8?pick(it.samples):"";
+        else if(it.type==="mc"){ answers[it.id] = (!isScored(it)||good)&&isScored(it)? it.correct : (isScored(it)? pick(it.options.filter(o=>o.id!==it.correct)).id : pick(it.options).id); }
+        else if(it.type==="num"){ answers[it.id] = good? String(it.accepted[0]) : (Math.random()<.8? String(pick(it.wrong).v) : String(Math.round(Math.random()*100))); }
+        else if(it.type==="text"){ answers[it.id] = good? it.display : (Math.random()<.8? pick(it.wrong).d : "I don’t know"); }
+      });
+      RESP.push({ts:Date.now()-Math.floor(Math.random()*600000), cd:c.id, period, name, answers});
+    });
+  });
+  saveLocal(RESP);
+}
+
+/* ================= WIRING ================= */
+function render(){
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===S.view)));
+  $app.innerHTML = S.view==="student" ? renderStudent() : renderTeacher();
+}
+$app.addEventListener("change", e=>{
+  if(e.target.id==="resfile"){ const f=e.target.files[0]; if(!f) return; f.text().then(t=>{ RESP=parseResp(t); S.csv=""; render(); }); return; }
+  const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
+  if(b==="t.unit"){ S.t.unit = e.target.value; S.t.cd = cdsOf(S.t.unit)[0].id; }
+  else if(b==="t.cd") S.t.cd = e.target.value; else if(b==="t.period") S.t.period = e.target.value;
+  else if(b==="unit"){ S.unit = e.target.value; S.cd = cdsOf(S.unit)[0].id; }
+  else S[b] = e.target.value;
+  if(b.startsWith("t.")) S.csv="";
+  render();
+});
+document.addEventListener("click", async e=>{
+  const el = e.target.closest("[data-act]"); if(!el) return;
+  const a = el.dataset.act;
+  if(a==="view"){ S.view = el.dataset.v; if(S.view==="teacher") await loadRemote(); render(); }
+  else if(a==="start"){ S.step="form"; render(); window.scrollTo(0,0); }
+  else if(a==="submit") submitForm();
+  else if(a==="refresh"){ el.textContent="Refreshing…"; await loadRemote(); render(); }
+  else if(a==="again"){ S.step="pick"; S.name=""; render(); }
+  else if(a==="sample"){ addSample(); S.csv=""; render(); }
+  else if(a==="clear"){ RESP = RESP.filter(r=>r.cd!==S.t.cd); saveLocal(RESP); S.csv=""; render(); }
+  else if(a==="csv"){ S.csv = buildCsv(); render(); }
+  else if(a==="copy"){ try{ await navigator.clipboard.writeText(S.csv); el.textContent="Copied"; }catch(err){ el.textContent="Select the text above and copy it"; } }
+});
+render();
+</script>
+</body>
+</html>
