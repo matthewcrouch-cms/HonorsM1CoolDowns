@@ -70,6 +70,12 @@ select:focus,input:focus,textarea:focus,button:focus-visible,.opt:has(input:focu
 .unit{color:var(--muted);font-size:.9rem;margin-top:4px}
 .graph{margin:6px 0 4px;max-width:480px}
 .graph svg{width:100%;height:auto;display:block}
+.graph.wide{max-width:780px}
+.graph img{max-width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:6px}
+table.t{border-collapse:collapse;margin:8px 0 4px;font-size:.95rem}
+table.t th,table.t td{border:1px solid var(--line);padding:4px 12px;text-align:center}
+table.t th{background:var(--bg)}
+.opt input[type=checkbox]{margin-top:5px;accent-color:var(--blue-ink)}
 .mark{font-weight:700}
 .mark.ok{color:var(--blue-ink)} .mark.no{color:var(--orange-ink)}
 /* teacher */
@@ -114,14 +120,21 @@ textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;m
 </div></header>
 <main id="app"></main>
 
+<script src="units/unit1.js"></script>
+<script src="units/unit2.js"></script>
+<script src="units/unit3.js"></script>
+<script src="units/unit4.js"></script>
 <script src="units/unit5.js"></script>
+<script src="units/unit6.js"></script>
+<script src="units/unit7.js"></script>
+<script src="units/unit8.js"></script>
 <script>
 /* ================= CONFIG ================= */
 const CONFIG = {
   // Student feedback after submitting: "marks" shows right/not yet per item; "none" just confirms.
   feedback: "marks",
   // PIN required to open the teacher view. Change the number between the quotes. Set to "" to turn the PIN off.
-  teacherPin: "4190",
+  teacherPin: "2468",
   // Google Form wiring (used on GitHub Pages). Leave action empty for demo mode (browser storage only).
   form: {
     action: "https://docs.google.com/forms/d/e/1FAIpQLSdZUcGGDruMUqcUzluu7S2GQ96A3cDupu4iqdQd_-3m1pE0eQ/formResponse",
@@ -184,6 +197,38 @@ async function loadRemote(){
   }catch(e){ S.loadErr = "Couldn’t load live results. Check your connection and choose Refresh results, or load a CSV file instead."; }
 }
 
+/* expression checking: compares typed algebra by evaluating it, so equivalent forms all count */
+function compileExpr(src){
+  let s = String(src).toLowerCase().replace(/[−–]/g,"-").replace(/[·×∙]/g,"*").replace(/÷/g,"/").replace(/²/g,"^2").replace(/³/g,"^3").replace(/\s+/g,"").replace(/(\d),(?=\d{3}(?!\d))/g,"$1");
+  if(s.includes("=")) s = s.slice(s.lastIndexOf("=")+1);
+  if(!s) return null;
+  let i = 0;
+  const isL = c => !!c && /[a-z]/.test(c), isD = c => !!c && /[0-9.]/.test(c);
+  const parseExpr = () => { let a = parseTerm(); while(s[i]==="+"||s[i]==="-"){ const op=s[i++], b=parseTerm(), l=a; a = op==="+" ? (e=>l(e)+b(e)) : (e=>l(e)-b(e)); } return a; };
+  const parseTerm = () => { let a = parseUnary(); for(;;){ const c = s[i];
+    if(c==="*"||c==="/"){ i++; const b=parseUnary(), l=a; a = c==="*" ? (e=>l(e)*b(e)) : (e=>l(e)/b(e)); }
+    else if(isL(c)||isD(c)||c==="("){ const b=parseUnary(), l=a; a = e=>l(e)*b(e); }
+    else break; } return a; };
+  const parseUnary = () => { if(s[i]==="-"){ i++; const b=parseUnary(); return e=>-b(e); } if(s[i]==="+"){ i++; return parseUnary(); } return parsePower(); };
+  const parsePower = () => { const base = parseAtom(); if(s[i]==="^"){ i++; const ex = parseExpUnary(); return e=>Math.pow(base(e),ex(e)); } return base; };
+  const parseExpUnary = () => { if(s[i]==="-"){ i++; const x=parseExpUnary(); return e=>-x(e); } return parsePower(); };
+  const parseAtom = () => {
+    if(isD(s[i])){ const j=i; while(isD(s[i])) i++; const v=parseFloat(s.slice(j,i)); if(isNaN(v)) throw new Error("num"); return ()=>v; }
+    if(isL(s[i])){ const n=s[i++]; return e=>{ if(!(n in e)) throw new Error("var"); return e[n]; }; }
+    if(s[i]==="("){ i++; const x=parseExpr(); if(s[i]!==")") throw new Error("paren"); i++; return x; }
+    throw new Error("syntax");
+  };
+  try{ const f = parseExpr(); if(i!==s.length) return null; return f; }catch(e){ return null; }
+}
+function makeEnvs(vars){ const base=[1.3,0.7,2.1,1.6]; return [0,1,2,3].map(k=>{ const env={}; vars.forEach((v,j)=>env[v]=base[(k+j)%4]); return env; }); }
+
+function numsIn(str){
+  const t = String(str).replace(/[−–]/g,"-");
+  return (t.match(/-?\d*\.?\d+(?:\s*\/\s*\d*\.?\d+)?/g)||[]).map(x=>{ const m=x.match(/^(-?\d*\.?\d+)\s*\/\s*(\d*\.?\d+)$/); return m ? parseFloat(m[1])/parseFloat(m[2]) : parseFloat(x); }).filter(v=>isFinite(v));
+}
+const uniqSorted = a => [...new Set(a.map(x=>Math.round(x*1e6)/1e6))].sort((x,y)=>x-y);
+const sameSet = (a,b) => { const x=uniqSorted(a), y=uniqSorted(b); return x.length===y.length && x.every((v,i)=>Math.abs(v-y[i])<=0.005); };
+
 /* scoring */
 function score(it, a){
   const blank = a===undefined || a===null || String(a).trim()==="";
@@ -193,12 +238,84 @@ function score(it, a){
     const o = it.options.find(o=>o.id===a);
     return {correct:a===it.correct, key:a, tag:(a===it.correct?null:(o&&o.tag)||"Other answer")};
   }
+  if(it.type==="multi"){
+    const sel = String(a).split(",").filter(Boolean).sort(), cor = [...it.correct].sort();
+    if(JSON.stringify(sel)===JSON.stringify(cor)) return {correct:true,key:"__correct"};
+    const extra = sel.filter(x=>!cor.includes(x));
+    const tag = extra.length ? ((it.options.find(o=>o.id===extra[0])||{}).tag || "Selected a choice that doesn’t apply") : "Missed a correct choice";
+    return {correct:false,key:"t:"+tag,tag};
+  }
+  if(it.type==="eqn"){
+    const parts = String(a).split("=");
+    if(parts.length!==2) return {correct:false,key:"__other",tag:"Other answer"};
+    const L = compileExpr(parts[0]), R = compileExpr(parts[1]);
+    if(!L || !R) return {correct:false,key:"__other",tag:"Other answer"};
+    const hold = env => { const l=L(env), r=R(env); return isFinite(l) && isFinite(r) && Math.abs(l-r) <= 1e-6*Math.max(1,Math.abs(l),Math.abs(r)); };
+    try{
+      if(it.sol!=null){
+        const v = it.vars[0], at = x => ({[v]:x});
+        if(hold(at(it.sol)) && [0,1,2.5,-3].some(x=>!hold(at(x)))){
+          const txt = norm(a).replace(/,/g,"");
+          if(it.mustAny && !it.mustAny.some(m=>txt.includes(m))) return {correct:false,key:"t:"+it.trivialTag,tag:it.trivialTag};
+          return {correct:true,key:"__correct"};
+        }
+        const F = x => L(at(x))-R(at(x)), f0=F(0), f1=F(1), f2=F(2);
+        if(Math.abs((f2-f1)-(f1-f0)) < 1e-6*Math.max(1,Math.abs(f1)) && Math.abs(f1-f0)>1e-12){
+          const sv = -f0/(f1-f0), w = (it.wrong||[]).find(w=>Math.abs(w.sol-sv)<1e-6);
+          if(w) return {correct:false,key:"t:"+w.tag,tag:w.tag};
+        }
+        return {correct:false,key:"__other",tag:"Other answer"};
+      }
+      const test = line => { const pts=[1,2,3,4.5].map(x=>{ const e={}; e[it.indep]=x; e[it.dep]=line(e); return e; }); return pts.every(hold) && pts.some(e=>{ const e2={...e}; e2[it.dep]+=7; return !hold(e2); }); };
+      if(test(it.line)) return {correct:true,key:"__correct"};
+      const w = (it.wrong||[]).find(w=>test(w.line));
+      return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
+    }catch(e){ return {correct:false,key:"__other",tag:"Other answer"}; }
+  }
+  if(it.type==="pair" || it.type==="numset"){
+    const t = numsIn(a);
+    if(!t.length) return {correct:false,key:"__other",tag:"Other answer"};
+    if(it.type==="pair"){
+      if(t.length!==2) return {correct:false,key:"__other",tag:"Other answer"};
+      if(it.checks){
+        const res = it.checks.map(c=>!!c.fn(t[0],t[1]));
+        if(res.every(Boolean)) return {correct:true,key:"__correct"};
+        const tag = res.every(r=>!r) ? it.bothTag : it.checks[res.findIndex(r=>!r)].tag;
+        return {correct:false,key:"t:"+tag,tag};
+      }
+      const close = (u,v) => Math.abs(u[0]-v[0])<=(it.tol||0.005) && Math.abs(u[1]-v[1])<=(it.tol||0.005);
+      if(close(t,it.answer)) return {correct:true,key:"__correct"};
+      const w = (it.wrong||[]).find(w=>w.v && close(t,w.v));
+      return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
+    }
+    if(sameSet(t,it.answer)) return {correct:true,key:"__correct"};
+    const w = (it.wrong||[]).find(w=>w.v && sameSet(t,w.v));
+    if(w) return {correct:false,key:"t:"+w.tag,tag:w.tag};
+    const u = uniqSorted(t), ans = uniqSorted(it.answer);
+    if(u.length<ans.length && u.every(v=>ans.some(x=>Math.abs(x-v)<=0.005))){ const pt=it.partialTag||"Found only some of the solutions"; return {correct:false,key:"t:"+pt,tag:pt}; }
+    return {correct:false,key:"__other",tag:"Other answer"};
+  }
+  if(it.type==="expr"){
+    const f = compileExpr(a); if(!f) return {correct:false,key:"__other",tag:"Other answer"};
+    const envs = makeEnvs(it.vars||[]);
+    const same = ref => { try{ return envs.every(env=>{ const x=f(env), y=ref(env); return isFinite(x) && Math.abs(x-y) <= 1e-6*Math.max(1,Math.abs(y)); }); }catch(e){ return false; } };
+    const n = norm(a), rhs = n.slice(n.lastIndexOf("=")+1);
+    if(same(compileExpr(it.answer))){
+      if(it.noNegExp && /\^\(?-/.test(n)) return {correct:false,key:"t:"+it.negTag,tag:it.negTag};
+      const carets=(rhs.match(/\^/g)||[]).length, letters=(rhs.match(/[a-z]/g)||[]).length;
+      if((it.maxCaret!=null && carets>it.maxCaret) || (it.maxLetters!=null && letters>it.maxLetters) || (it.noParens && /[()]/.test(rhs)) || (it.needParens && !/\(/.test(rhs))) return {correct:false,key:"t:"+it.simpTag,tag:it.simpTag};
+      return {correct:true,key:"__correct"};
+    }
+    const w = it.wrong.find(w=>w.e && same(compileExpr(w.e)));
+    return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
+  }
   if(it.type==="num"){
-    const m = String(a).replace(/,/g,"").match(/-?\d*\.?\d+/);
-    if(!m) return {correct:false,key:"__other",tag:"Other answer"};
-    const v = parseFloat(m[0]);
+    const str = String(a).replace(/,/g,"");
+    let v; const fm = str.match(/(-?\d*\.?\d+)\s*\/\s*(\d*\.?\d+)/);
+    if(fm) v = parseFloat(fm[1])/parseFloat(fm[2]);
+    else { const m = str.match(/-?\d*\.?\d+/); if(!m) return {correct:false,key:"__other",tag:"Other answer"}; v = parseFloat(m[0]); if(it.pctToFrac && /%/.test(str)) v = v/100; }
     if(it.accepted.some(x=>Math.abs(x-v) <= (it.tol||0.001))) return {correct:true,key:"__correct"};
-    const w = it.wrong.find(w=>Math.abs(w.v-v) <= 0.001);
+    const w = it.wrong.find(w=>Math.abs(w.v-v) <= (w.tol||0.001));
     return {correct:false,key:w?"t:"+w.tag:"__other",tag:w?w.tag:"Other answer"};
   }
   if(it.type==="text"){
@@ -219,17 +336,28 @@ function latest(cdId, period){
   return [...m.values()];
 }
 
-/* graph */
+/* graph: line through points, dots with labels, or plotted curves */
 function graphSvg(g){
+  if(g.img) return `<div class="graph wide"><img src="${g.img}" alt="${esc(g.alt||"")}"></div>`;
   const W=440,H=270,L=58,R=14,T=12,B=46;
   const sx=x=>L+(x-g.xmin)/(g.xmax-g.xmin)*(W-L-R), sy=y=>H-B-(y-g.ymin)/(g.ymax-g.ymin)*(H-T-B);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(g.alt)}">`;
-  for(let x=g.xmin;x<=g.xmax;x+=g.xt){ s+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H-B}" stroke="var(--grid)"/><text x="${sx(x)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${x}</text>`; }
-  for(let y=g.ymin;y<=g.ymax;y+=g.yt){ s+=`<line x1="${L}" x2="${W-R}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--grid)"/><text x="${L-6}" y="${sy(y)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${y}</text>`; }
-  s+=`<line x1="${L}" x2="${L}" y1="${T}" y2="${H-B}" stroke="var(--muted)"/><line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="var(--muted)"/>`;
-  s+=`<polyline fill="none" stroke="var(--blue-ink)" stroke-width="2.5" stroke-linejoin="round" points="${g.pts.map(p=>sx(p[0])+","+sy(p[1])).join(" ")}"/>`;
-  s+=`<text x="${(L+W-R)/2}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.xlab)}</text>`;
-  s+=`<text transform="translate(14 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.ylab)}</text></svg>`;
+  if(!g.noTicks){
+    for(let x=g.xmin;x<=g.xmax+1e-9;x+=g.xt){ s+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H-B}" stroke="var(--grid)"/><text x="${sx(x)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${x}</text>`; }
+    for(let y=g.ymin;y<=g.ymax+1e-9;y+=g.yt){ s+=`<line x1="${L}" x2="${W-R}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--grid)"/><text x="${L-6}" y="${sy(y)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${y}</text>`; }
+  }
+  const ax = (g.xmin<0 && g.xmax>0) ? sx(0) : L;
+  const ay = (g.ymin<0 && g.ymax>0) ? sy(0) : H-B;
+  s+=`<line x1="${ax}" x2="${ax}" y1="${T}" y2="${H-B}" stroke="var(--muted)"/><line x1="${L}" x2="${W-R}" y1="${ay}" y2="${ay}" stroke="var(--muted)"/>`;
+  if(g.curves) g.curves.forEach(c=>{
+    const pts=[]; for(let k=0;k<=160;k++){ const x=g.xmin+(g.xmax-g.xmin)*k/160, y=c.fn(x); if(y>=g.ymin && y<=g.ymax) pts.push(sx(x).toFixed(1)+","+sy(y).toFixed(1)); }
+    s+=`<polyline fill="none" stroke="${c.color}" stroke-width="2.5" stroke-linejoin="round" points="${pts.join(" ")}"/>`;
+    if(c.label) s+=`<text x="${sx(c.lx)+(c.dx||8)}" y="${sy(c.fn(c.lx))+(c.dy||-8)}" font-size="15" font-style="italic" font-weight="700" fill="${c.color}">${c.label}</text>`;
+  });
+  if(g.pts) s+=`<polyline fill="none" stroke="var(--blue-ink)" stroke-width="2.5" stroke-linejoin="round" points="${g.pts.map(p=>sx(p[0])+","+sy(p[1])).join(" ")}"/>`;
+  if(g.dots) g.dots.forEach(d=>{ s+=`<circle cx="${sx(d.x)}" cy="${sy(d.y)}" r="5" fill="${d.color||"var(--orange-ink)"}"/>`; if(d.label) s+=`<text x="${sx(d.x)+(d.dx==null?8:d.dx)}" y="${sy(d.y)+(d.dy==null?-8:d.dy)}" font-size="12" fill="var(--ink)">${esc(d.label)}</text>`; });
+  s+=`<text x="${(L+W-R)/2}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.xlab||"")}</text>`;
+  s+=`<text transform="translate(14 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink)">${esc(g.ylab||"")}</text></svg>`;
   return `<div class="graph">${s}</div>`;
 }
 
@@ -277,10 +405,19 @@ function renderStudent(){
     <button class="btn" data-act="again">Back to start</button>
   </section>`;
 }
+/* answer choices appear in a different, stable order for each student, so the right answer isn't always first */
+function optsFor(it){
+  if(it.row || it.scored===false || it.fixed) return it.options;
+  let h = 2166136261; const key = S.name + "|" + it.id;
+  for(let i=0;i<key.length;i++){ h ^= key.charCodeAt(i); h = Math.imul(h,16777619); }
+  const rnd = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t>>>15, t|1); t ^= t + Math.imul(t ^ t>>>7, t|61); return ((t ^ t>>>14)>>>0)/4294967296; };
+  const a = it.options.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a;
+}
 function renderItem(it){
   let h = it.groupStem ? `<p class="gstem">${it.groupStem}</p>` : "";
   h += `<div class="item"><p class="stem">${it.label?`<span class="lab">${it.label}</span>`:""}${it.stem}</p>`;
-  if(it.type==="mc") h += `<div class="opts ${it.row?"row":""}">${it.options.map(o=>`<label class="opt"><input type="radio" name="${it.id}" value="${o.id}"><span>${o.t}</span></label>`).join("")}</div>`;
+  if(it.type==="multi") h += `<div class="unit">Select all that apply.</div><div class="opts">${optsFor(it).map(o=>`<label class="opt"><input type="checkbox" name="${it.id}" value="${o.id}"><span>${o.t}</span></label>`).join("")}</div>`;
+  else if(it.type==="mc") h += `<div class="opts ${it.row?"row":""}">${optsFor(it).map(o=>`<label class="opt"><input type="radio" name="${it.id}" value="${o.id}"><span>${o.t}</span></label>`).join("")}</div>`;
   else if(it.type==="open") h += `<textarea name="${it.id}" aria-label="Your answer"></textarea>`;
   else h += `<input type="text" name="${it.id}" autocomplete="off" inputmode="${it.type==="num"?"decimal":"text"}" placeholder="${esc(it.ph||"Type your answer")}" aria-label="Your answer">${it.unit?`<div class="unit">${esc(it.unit)}</div>`:""}`;
   return h + `</div>`;
@@ -288,7 +425,8 @@ function renderItem(it){
 async function submitForm(){
   const c = getCD(S.cd), answers = {};
   c.items.forEach(it=>{
-    if(it.type==="mc"){ const el=$app.querySelector(`input[name="${it.id}"]:checked`); answers[it.id]=el?el.value:""; }
+    if(it.type==="multi"){ answers[it.id] = [...$app.querySelectorAll(`input[name="${it.id}"]:checked`)].map(e=>e.value).join(","); }
+    else if(it.type==="mc"){ const el=$app.querySelector(`input[name="${it.id}"]:checked`); answers[it.id]=el?el.value:""; }
     else { const el=$app.querySelector(`[name="${it.id}"]`); answers[it.id]=el?el.value.trim():""; }
   });
   const rec = {ts:Date.now(), cd:S.cd, period:S.period, name:S.name, answers};
@@ -299,12 +437,18 @@ async function submitForm(){
 /* ================= TEACHER VIEW ================= */
 function breakdown(it, rs){
   const n = rs.length, rows = [];
+  if(it.type==="multi"){
+    const out = it.options.map(o=>{ const k = rs.filter(r=>String(r.answers[it.id]||"").split(",").includes(o.id)).length, ok = it.correct.includes(o.id);
+      return {label:o.t+(ok?" (correct choice)":""),tag:ok?null:o.tag,n:k,kind:ok?"c":"w",pct:n?Math.round(100*k/n):0}; });
+    const bl = rs.filter(r=>!String(r.answers[it.id]||"").trim()).length;
+    out.push({label:"No answer",n:bl,kind:"n",pct:n?Math.round(100*bl/n):0}); return out;
+  }
   const cnt = {}; rs.forEach(r=>{const k=score(it,r.answers[it.id]).key; cnt[k]=(cnt[k]||0)+1;});
   if(it.type==="mc"){
     it.options.forEach(o=>rows.push({label:o.t, tag:o.tag, n:cnt[o.id]||0, kind: !isScored(it)?"n":(o.id===it.correct?"c":"w")}));
   } else if(isScored(it)){
     rows.push({label:"Correct answer", n:cnt["__correct"]||0, kind:"c"});
-    const tags = [...new Set(it.wrong.map(w=>w.tag))];
+    const tags = [...new Set([...it.wrong.map(w=>w.tag), ...(it.negTag?[it.negTag]:[]), ...(it.simpTag?[it.simpTag]:[]), ...(it.trivialTag?[it.trivialTag]:[]), ...(it.partialTag?[it.partialTag]:[]), ...(it.checks?it.checks.map(c=>c.tag):[]), ...(it.bothTag?[it.bothTag]:[])])];
     tags.forEach(t=>rows.push({label:t, n:cnt["t:"+t]||0, kind:"w"}));
     rows.push({label:"Other answer", n:cnt["__other"]||0, kind:"n"});
   }
@@ -325,35 +469,35 @@ function renderTeacher(){
       ${CONFIG.form.action ? `${CONFIG.resultsCsv?`<button class="btn alt" data-act="refresh">Refresh results</button>`:""}<div><label class="f" for="resfile">Results file (CSV from your Sheet)</label><input type="file" id="resfile" accept=".csv,text/csv"></div>` : `<button class="btn alt" data-act="sample">Add sample responses</button><button class="btn alt" data-act="clear">Clear this cool down</button>`}
     </div>
     ${S.loadErr?`<div class="demo">${S.loadErr}</div>`:""}
-    ${c.keyStatus==="draft"?`<div class="demo"><b>Draft answer key.</b> I read this key from the graph. Confirm it before using these scores.</div>`:""}`;
+    ${c.keyStatus==="draft"?`<div class="demo"><b>Draft answer key.</b> ${c.keyNote||"Confirm it before using these scores."}</div>`:""}`;
   if(!n){
     return h + `<div class="empty">${CONFIG.resultsCsv ? "No responses yet for this cool down. Choose Refresh results to check again." : CONFIG.form.action ? "No responses loaded for this cool down. In your Google Sheet, choose File, Download, Comma-separated values (.csv), then pick that file above." : "No responses yet for this cool down. Have a student submit one in Student view, or add sample responses to see how this page works."}</div></section>`;
   }
   const scored = c.items.filter(isScored);
   const avg = Math.round(rs.reduce((s,r)=>s+pctFor(c,r.answers),0)/n);
-  h += `<div class="stats"><div class="stat"><b>${n}</b><span>students submitted</span></div><div class="stat"><b>${avg}%</b><span>class average</span></div></div></section>`;
+  h += `<div class="stats"><div class="stat"><b>${n}</b><span>students submitted</span></div>${scored.length?`<div class="stat"><b>${avg}%</b><span>class average</span></div>`:""}</div></section>`;
 
   // groups
   const G = {g:[],a:[],n:[]};
   rs.forEach(r=>{const p=pctFor(c,r.answers); (p>=80?G.g:p>=50?G.a:G.n).push({name:r.name,p});});
   const col=(k,t,d)=>`<div class="col ${k}"><h3>${t} (${G[k].length})</h3><span class="sub">${d}</span><ul>${G[k].sort((a,b)=>a.p-b.p).map(s=>`<li>${esc(s.name)} <span class="sub">${s.p}%</span></li>`).join("")||"<li class='sub'>None</li>"}</ul></div>`;
-  h += `<section class="card"><h2>Who’s ready</h2><p class="sub">Based on the scored items.</p><div class="cols">${col("n","Not yet","Under 50%")}${col("a","Almost","50% to 79%")}${col("g","Got it","80% or higher")}</div></section>`;
+  if(scored.length) h += `<section class="card"><h2>Who’s ready</h2><p class="sub">Based on the scored items.</p><div class="cols">${col("n","Not yet","Under 50%")}${col("a","Almost","50% to 79%")}${col("g","Got it","80% or higher")}</div></section>`;
 
   // misconceptions
   const mc = {};
   scored.forEach(it=>rs.forEach(r=>{const s=score(it,r.answers[it.id]); if(s.correct===false && s.tag && !["Other answer","No answer"].includes(s.tag)) mc[s.tag]=(mc[s.tag]||0)+1;}));
   const top = Object.entries(mc).sort((a,b)=>b[1]-a[1]).slice(0,5), mx = top.length?top[0][1]:1;
-  h += `<section class="card"><h2>Most common misconceptions</h2><p class="sub">Counts of wrong answers that match a known misconception, across all items.</p>${top.length?`<ul class="mis">${top.map(([t,k])=>`<li><div>${esc(t)}<div class="track"><div class="fill" style="width:${Math.round(100*k/mx)}%"></div></div></div><span class="cnt">${k}</span></li>`).join("")}</ul>`:`<div class="empty">No misconception patterns yet.</div>`}</section>`;
+  if(scored.length) h += `<section class="card"><h2>Most common misconceptions</h2><p class="sub">Counts of wrong answers that match a known misconception, across all items.</p>${top.length?`<ul class="mis">${top.map(([t,k])=>`<li><div>${esc(t)}<div class="track"><div class="fill" style="width:${Math.round(100*k/mx)}%"></div></div></div><span class="cnt">${k}</span></li>`).join("")}</ul>`:`<div class="empty">No misconception patterns yet.</div>`}</section>`;
 
   // items
-  h += `<section class="card"><h2>Item by item</h2>`;
+  if(c.items.some(it=>it.type!=="open")) h += `<section class="card"><h2>Item by item</h2>`;
   c.items.filter(it=>it.type!=="open").forEach(it=>{
     const rows = breakdown(it, rs);
     const right = isScored(it)? rs.filter(r=>score(it,r.answers[it.id]).correct).length : null;
     h += `<div class="item"><div class="ih"><p class="stem"><span class="lab">${esc(it.label||"")}</span>${it.stem}</p>${right!==null?`<span class="pct">${Math.round(100*right/n)}% <span class="sub">(${right} of ${n})</span></span>`:`<span class="sub">Not scored</span>`}</div>
       <div class="bk">${rows.map(r=>`<div class="bkrow"><div>${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span></div>`).join("")}</div></div>`;
   });
-  h += `</section>`;
+  if(c.items.some(it=>it.type!=="open")) h += `</section>`;
 
   // open responses
   const opens = c.items.filter(it=>it.type==="open");
@@ -375,7 +519,7 @@ function buildCsv(){
     const row=[new Date(r.ts).toLocaleString(), c.title, r.period, r.name, pctFor(c,r.answers)];
     its.forEach(it=>{
       const a=r.answers[it.id]||""; const o = it.type==="mc"?it.options.find(o=>o.id===a):null;
-      row.push(o?strip(o.t):a); if(isScored(it)) row.push(score(it,a).correct?1:0);
+      row.push(it.type==="multi" ? a.split(",").filter(Boolean).map(i=>strip((it.options.find(o=>o.id===i)||{t:i}).t)).join("; ") : (o?strip(o.t):a)); if(isScored(it)) row.push(score(it,a).correct?1:0);
     });
     lines.push(row.map(q).join(","));
   });
@@ -394,7 +538,8 @@ function addSample(){
         if(it.type==="open") answers[it.id] = Math.random()<.8?pick(it.samples):"";
         else if(it.type==="mc"){ answers[it.id] = (!isScored(it)||good)&&isScored(it)? it.correct : (isScored(it)? pick(it.options.filter(o=>o.id!==it.correct)).id : pick(it.options).id); }
         else if(it.type==="num"){ answers[it.id] = good? String(it.accepted[0]) : (Math.random()<.8? String(pick(it.wrong).v) : String(Math.round(Math.random()*100))); }
-        else if(it.type==="text"){ answers[it.id] = good? it.display : (Math.random()<.8? pick(it.wrong).d : "I don’t know"); }
+        else if(it.type==="multi"){ answers[it.id] = good ? it.correct.join(",") : pick(it.options).id; }
+        else if(["text","expr","eqn","pair","numset"].includes(it.type)){ answers[it.id] = good ? it.display : ((it.wrong&&it.wrong.length&&Math.random()<.8) ? pick(it.wrong).d : "I don’t know"); }
       });
       RESP.push({ts:Date.now()-Math.floor(Math.random()*600000), cd:c.id, period, name, answers});
     });
