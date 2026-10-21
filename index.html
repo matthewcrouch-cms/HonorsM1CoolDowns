@@ -86,7 +86,18 @@ table.t th{background:var(--bg)}
 .stat b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.8rem;display:block;line-height:1}
 .stat span{color:var(--muted);font-size:.9rem}
 .mis{margin:0;padding:0;list-style:none;display:grid;gap:10px}
-.mis li{display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:4px 12px;align-items:center}
+.mis li{display:block}
+.misrow{display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:4px 12px;align-items:center}
+.bkd{display:block}
+.bkd>summary{cursor:pointer;list-style:none}
+.bkd>summary::-webkit-details-marker{display:none}
+.car{display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
+.bkd[open]>summary .car{transform:rotate(90deg)}
+.wholist{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 6px 1.1em}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 11px;font-size:.88rem}
+.missed{margin:6px 0 6px;padding-left:1.4em;font-size:.9rem}
+.missed li{margin-bottom:4px}
+.missed .tg{display:block;color:var(--orange-ink)}
 .track{height:12px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .fill{height:100%;background:var(--orange)}
 .fill.c{background:var(--blue)} .fill.n{background:var(--neutral)}
@@ -99,7 +110,8 @@ table.t th{background:var(--bg)}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .col{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
 .col h3{font-size:1.05rem;margin-bottom:4px}
-.col ul{margin:6px 0 0;padding-left:18px}
+.col ul{margin:6px 0 0;padding-left:0;list-style:none}
+.col li{margin-bottom:4px}
 .col.g{border-top:4px solid var(--blue)} .col.a{border-top:4px solid var(--neutral)} .col.n{border-top:4px solid var(--orange)}
 .empty{color:var(--muted);padding:18px;border:2px dashed var(--line);border-radius:10px;text-align:center}
 .open li{margin-bottom:8px}
@@ -134,7 +146,7 @@ const CONFIG = {
   // Student feedback after submitting: "marks" shows right/not yet per item; "none" just confirms.
   feedback: "marks",
   // PIN required to open the teacher view. Change the number between the quotes. Set to "" to turn the PIN off.
-  teacherPin: "4190",
+  teacherPin: "2468",
   // Google Form wiring (used on GitHub Pages). Leave action empty for demo mode (browser storage only).
   form: {
     action: "https://docs.google.com/forms/d/e/1FAIpQLSdZUcGGDruMUqcUzluu7S2GQ96A3cDupu4iqdQd_-3m1pE0eQ/formResponse",
@@ -435,24 +447,28 @@ async function submitForm(){
 }
 
 /* ================= TEACHER VIEW ================= */
+const rosterIdx = nm => { for(const list of Object.values(CONFIG.roster)){ const k=list.indexOf(nm); if(k>=0) return k; } return 999; };
+const byRoster = (a,b) => rosterIdx(a)-rosterIdx(b) || String(a).localeCompare(String(b));
+const chips = names => [...names].sort(byRoster).map(n=>`<span class="chip">${esc(n)}</span>`).join("");
+
 function breakdown(it, rs){
   const n = rs.length, rows = [];
   if(it.type==="multi"){
-    const out = it.options.map(o=>{ const k = rs.filter(r=>String(r.answers[it.id]||"").split(",").includes(o.id)).length, ok = it.correct.includes(o.id);
-      return {label:o.t+(ok?" (correct choice)":""),tag:ok?null:o.tag,n:k,kind:ok?"c":"w",pct:n?Math.round(100*k/n):0}; });
-    const bl = rs.filter(r=>!String(r.answers[it.id]||"").trim()).length;
-    out.push({label:"No answer",n:bl,kind:"n",pct:n?Math.round(100*bl/n):0}); return out;
+    const out = it.options.map(o=>{ const who = rs.filter(r=>String(r.answers[it.id]||"").split(",").includes(o.id)).map(r=>r.name), k = who.length, ok = it.correct.includes(o.id);
+      return {label:o.t+(ok?" (correct choice)":""),tag:ok?null:o.tag,n:k,names:who,kind:ok?"c":"w",pct:n?Math.round(100*k/n):0}; });
+    const blw = rs.filter(r=>!String(r.answers[it.id]||"").trim()).map(r=>r.name), bl = blw.length;
+    out.push({label:"No answer",n:bl,names:blw,kind:"n",pct:n?Math.round(100*bl/n):0}); return out;
   }
-  const cnt = {}; rs.forEach(r=>{const k=score(it,r.answers[it.id]).key; cnt[k]=(cnt[k]||0)+1;});
+  const cnt = {}, who = {}; rs.forEach(r=>{const k=score(it,r.answers[it.id]).key; cnt[k]=(cnt[k]||0)+1; (who[k]=who[k]||[]).push(r.name);});
   if(it.type==="mc"){
-    it.options.forEach(o=>rows.push({label:o.t, tag:o.tag, n:cnt[o.id]||0, kind: !isScored(it)?"n":(o.id===it.correct?"c":"w")}));
+    it.options.forEach(o=>rows.push({label:o.t, tag:o.tag, n:cnt[o.id]||0, names:who[o.id]||[], kind: !isScored(it)?"n":(o.id===it.correct?"c":"w")}));
   } else if(isScored(it)){
-    rows.push({label:"Correct answer", n:cnt["__correct"]||0, kind:"c"});
+    rows.push({label:"Correct answer", n:cnt["__correct"]||0, names:who["__correct"]||[], kind:"c"});
     const tags = [...new Set([...it.wrong.map(w=>w.tag), ...(it.negTag?[it.negTag]:[]), ...(it.simpTag?[it.simpTag]:[]), ...(it.trivialTag?[it.trivialTag]:[]), ...(it.partialTag?[it.partialTag]:[]), ...(it.checks?it.checks.map(c=>c.tag):[]), ...(it.bothTag?[it.bothTag]:[])])];
-    tags.forEach(t=>rows.push({label:t, n:cnt["t:"+t]||0, kind:"w"}));
-    rows.push({label:"Other answer", n:cnt["__other"]||0, kind:"n"});
+    tags.forEach(t=>rows.push({label:t, n:cnt["t:"+t]||0, names:who["t:"+t]||[], kind:"w"}));
+    rows.push({label:"Other answer", n:cnt["__other"]||0, names:who["__other"]||[], kind:"n"});
   }
-  if(isScored(it)||it.type==="mc") rows.push({label:"No answer", n:cnt["__blank"]||0, kind:"n"});
+  if(isScored(it)||it.type==="mc") rows.push({label:"No answer", n:cnt["__blank"]||0, names:who["__blank"]||[], kind:"n"});
   return rows.map(r=>({...r, pct: n?Math.round(100*r.n/n):0}));
 }
 function renderTeacher(){
@@ -479,15 +495,15 @@ function renderTeacher(){
 
   // groups
   const G = {g:[],a:[],n:[]};
-  rs.forEach(r=>{const p=pctFor(c,r.answers); (p>=80?G.g:p>=50?G.a:G.n).push({name:r.name,p});});
-  const col=(k,t,d)=>`<div class="col ${k}"><h3>${t} (${G[k].length})</h3><span class="sub">${d}</span><ul>${G[k].sort((a,b)=>a.p-b.p).map(s=>`<li>${esc(s.name)} <span class="sub">${s.p}%</span></li>`).join("")||"<li class='sub'>None</li>"}</ul></div>`;
-  if(scored.length) h += `<section class="card"><h2>Who’s ready</h2><p class="sub">Based on the scored items.</p><div class="cols">${col("n","Not yet","Under 50%")}${col("a","Almost","50% to 79%")}${col("g","Got it","80% or higher")}</div></section>`;
+  rs.forEach(r=>{const p=pctFor(c,r.answers); const missed=scored.map(it=>({it,s:score(it,r.answers[it.id])})).filter(x=>x.s.correct===false).map(x=>({label:x.it.label||"",stem:strip(x.it.stem),tag:x.s.tag||"Answered incorrectly"})); (p>=80?G.g:p>=50?G.a:G.n).push({name:r.name,p,missed});});
+  const col=(k,t,d)=>`<div class="col ${k}"><h3>${t} (${G[k].length})</h3><span class="sub">${d}</span><ul>${G[k].sort((a,b)=>a.p-b.p||byRoster(a.name,b.name)).map(s=>s.missed.length?`<li><details class="bkd"><summary><span class="car">▸</span>${esc(s.name)} <span class="sub">${s.p}%</span></summary><ul class="missed">${s.missed.map(m=>`<li><b>${esc(m.label)}</b> ${esc(m.stem.length>58?m.stem.slice(0,58)+"…":m.stem)}<span class="tg">${esc(m.tag)}</span></li>`).join("")}</ul></details></li>`:`<li>${esc(s.name)} <span class="sub">${s.p}%</span></li>`).join("")||"<li class='sub'>None</li>"}</ul></div>`;
+  if(scored.length) h += `<section class="card"><h2>Who’s ready</h2><p class="sub">Based on the scored items. Click a student to see what they missed.</p><div class="cols">${col("n","Not yet","Under 50%")}${col("a","Almost","50% to 79%")}${col("g","Got it","80% or higher")}</div></section>`;
 
   // misconceptions
-  const mc = {};
-  scored.forEach(it=>rs.forEach(r=>{const s=score(it,r.answers[it.id]); if(s.correct===false && s.tag && !["Other answer","No answer"].includes(s.tag)) mc[s.tag]=(mc[s.tag]||0)+1;}));
+  const mc = {}, mcw = {};
+  scored.forEach(it=>rs.forEach(r=>{const s=score(it,r.answers[it.id]); if(s.correct===false && s.tag && !["Other answer","No answer"].includes(s.tag)){ mc[s.tag]=(mc[s.tag]||0)+1; (mcw[s.tag]=mcw[s.tag]||[]).push({name:r.name,label:it.label}); }}));
   const top = Object.entries(mc).sort((a,b)=>b[1]-a[1]).slice(0,5), mx = top.length?top[0][1]:1;
-  if(scored.length) h += `<section class="card"><h2>Most common misconceptions</h2><p class="sub">Counts of wrong answers that match a known misconception, across all items.</p>${top.length?`<ul class="mis">${top.map(([t,k])=>`<li><div>${esc(t)}<div class="track"><div class="fill" style="width:${Math.round(100*k/mx)}%"></div></div></div><span class="cnt">${k}</span></li>`).join("")}</ul>`:`<div class="empty">No misconception patterns yet.</div>`}</section>`;
+  if(scored.length) h += `<section class="card"><h2>Most common misconceptions</h2><p class="sub">Counts of wrong answers that match a known misconception, across all items. Click one to see which students.</p>${top.length?`<ul class="mis">${top.map(([t,k])=>`<li><details class="bkd"><summary class="misrow"><div><span class="car">▸</span>${esc(t)}<div class="track"><div class="fill" style="width:${Math.round(100*k/mx)}%"></div></div></div><span class="cnt">${k}</span></summary><div class="wholist">${(mcw[t]||[]).sort((a,b)=>byRoster(a.name,b.name)).map(x=>`<span class="chip">${esc(x.name)}${x.label?` · Q${esc(x.label)}`:""}</span>`).join("")}</div></details></li>`).join("")}</ul>`:`<div class="empty">No misconception patterns yet.</div>`}</section>`;
 
   // items
   if(c.items.some(it=>it.type!=="open")) h += `<section class="card"><h2>Item by item</h2>`;
@@ -495,7 +511,7 @@ function renderTeacher(){
     const rows = breakdown(it, rs);
     const right = isScored(it)? rs.filter(r=>score(it,r.answers[it.id]).correct).length : null;
     h += `<div class="item"><div class="ih"><p class="stem"><span class="lab">${esc(it.label||"")}</span>${it.stem}</p>${right!==null?`<span class="pct">${Math.round(100*right/n)}% <span class="sub">(${right} of ${n})</span></span>`:`<span class="sub">Not scored</span>`}</div>
-      <div class="bk">${rows.map(r=>`<div class="bkrow"><div>${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span></div>`).join("")}</div></div>`;
+      <div class="bk">${rows.map(r=>{ const inner=`<div>${r.n?`<span class="car">▸</span>`:""}${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span>`; return r.n ? `<details class="bkd"><summary class="bkrow">${inner}</summary><div class="wholist">${chips(r.names||[])}</div></details>` : `<div class="bkrow">${inner}</div>`; }).join("")}</div></div>`;
   });
   if(c.items.some(it=>it.type!=="open")) h += `</section>`;
 
