@@ -49,7 +49,7 @@ const MIS_6S = "Multiplied 6·s without squaring";
 {
   id:"u5l3", title:"Lesson 3: Population of a City", keyStatus:"final",
   intro:"The graph shows the population of a city from 1900 to 2000.",
-  graph:{pts:[[1900,20],[1910,22],[1920,32],[1930,40],[1940,44],[1950,45],[1960,43],[1970,35],[1980,30],[1990,28],[2000,26]],xmin:1900,xmax:2000,xt:20,ymin:0,ymax:50,yt:10,xlab:"year",ylab:"population in thousands",alt:"Line graph of a city’s population in thousands from 1900 to 2000. It rises to about 45 thousand around 1950, then falls to about 26 thousand by 2000."},
+  graph:{pts:[[1900,20],[1910,22],[1920,32],[1930,40],[1940,44],[1950,45],[1960,43],[1970,35],[1980,30],[1990,28],[2000,26]],xmin:1900,xmax:2000,xt:10,ymin:0,ymax:50,yt:5,xlab:"year",ylab:"population in thousands",alt:"Line graph of a city’s population in thousands from 1900 to 2000. It rises to about 45 thousand around 1950, then falls to about 26 thousand by 2000."},
   items:[
     {id:"u5l3_1",label:"1",stem:"What is the average rate of change of the population between 1930 and 1950? Enter a number.",type:"num",ph:"Number only",unit:"Include thousands per year or people per year in your thinking, then type the number.",accepted:[0.25,250],wrong:[{v:5,tag:"Found the change but didn’t divide by 20 years"},{v:45,tag:"Used the 1950 population, not the change"},{v:20,tag:"Used the length of the interval"}]},
     {id:"u5l3_2a",label:"2a",groupStem:"2. Is the average rate of change positive or negative?",stem:"From 1930 to 1940",type:"mc",row:true,correct:"p",options:[{id:"p",t:"Positive"},{id:"n",t:"Negative",tag:"Mixed up rising and falling"}]},
