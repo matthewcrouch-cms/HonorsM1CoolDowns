@@ -56,6 +56,25 @@ select:focus,input:focus,textarea:focus,button:focus-visible,.opt:has(input:focu
 .btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .btn.alt{background:transparent;color:var(--ink);border:2px solid var(--line);margin-top:0;padding:8px 14px;font-weight:400}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.pstep{margin-top:24px;scroll-margin-top:12px}
+.pstep:focus{outline:none}
+.pstep h3{font-size:1.2rem;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.pn{display:inline-grid;place-items:center;width:1.8em;height:1.8em;border-radius:50%;background:var(--ink);color:var(--surface);font-size:.85rem;flex:none}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.pgrid.wide{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.pbtn{appearance:none;font:inherit;font-weight:700;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;text-align:center;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.pbtn .pt{font-weight:400}
+.pbtn:hover{border-color:var(--blue)}
+.pbtn.on{background:var(--good-bg);border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.pbtn:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.pick-sum{margin:6px 0 0}
+.tlabel{font-weight:700;margin:16px 0 8px}
+.pgrid.sm{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.pgrid.sm.wide{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.pbtn.sm{padding:9px 10px;min-height:44px;font-size:.95rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--orange);margin-left:7px;vertical-align:middle}
+.bd{display:block;font-weight:400;font-size:.8rem;color:var(--blue-ink)}
+.bd.none{color:var(--muted)}
 .who{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.95rem;margin-bottom:6px}
 .item{padding:18px 0;border-top:1px solid var(--line)}
 .item:first-of-type{border-top:0}
@@ -132,6 +151,7 @@ textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;m
 </div></header>
 <main id="app"></main>
 
+<script src="config.js"></script>
 <script src="units/unit1.js"></script>
 <script src="units/unit2.js"></script>
 <script src="units/unit3.js"></script>
@@ -142,22 +162,15 @@ textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;m
 <script src="units/unit8.js"></script>
 <script>
 /* ================= CONFIG ================= */
-const CONFIG = {
-  // Student feedback after submitting: "marks" shows right/not yet per item; "none" just confirms.
-  feedback: "marks",
-  // PIN required to open the teacher view. Change the number between the quotes. Set to "" to turn the PIN off.
-  teacherPin: "4190",
-  // Google Form wiring (used on GitHub Pages). Leave action empty for demo mode (browser storage only).
-  form: {
-    action: "https://docs.google.com/forms/d/e/1FAIpQLSdZUcGGDruMUqcUzluu7S2GQ96A3cDupu4iqdQd_-3m1pE0eQ/formResponse",
-    fields: { cooldown: "entry.1241225437", period: "entry.2007958280", name: "entry.2054667440", answers: "entry.1980489109" }
-  },
-  // "Publish to web" CSV link of the Form’s response sheet. Leave empty for demo mode.
-  resultsCsv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTz3qu3C2adCc8Osxc7zgBVo95qA2IQSeSyHZ3jVrZpnrAGSzcTO4tl2Sp1wYW-2CgNqCTJ3pkwaMcI/pub?gid=1233888133&single=true&output=csv",
-  roster: {
-    "4th Block": ["Destiny B.","Valentino D.","Gracie D.","Daniel G.","Theo H.","Dario H.","Aubrey J.","Brody J.","Patrick M.","Celeste M.","Zoie N.","Paula N.","Uchechi N.","Yaduraj P.","Jackson P.","Asha R.","Crystal S.","Isaiah T.","Davien T.","Ellis W."]
-  }
-};
+/* Settings live in config.js (classes, rosters, PINs, Google Form links), so updating this file never overwrites them. */
+const CONFIG = Object.assign({ feedback:"marks", form:{action:"",fields:{}}, resultsCsv:"", masterPin:"", teachers:[], classes:[] }, window.CONFIG_LOCAL||{});
+if(!CONFIG.masterPin && CONFIG.teacherPin) CONFIG.masterPin = CONFIG.teacherPin;
+const CLASSES = (CONFIG.classes||[]).map(c=>({...c, roster:c.roster||[], label:c.teacher+" · "+c.block, short:c.teacher+" "+String(c.block).replace(" Block","")}));
+CONFIG.roster = Object.fromEntries(CLASSES.map(c=>[c.key,c.roster]));
+const OPEN_CLASSES = CLASSES.filter(c=>c.roster.length);
+const classLabel = key => (CLASSES.find(c=>c.key===key)||{label:key}).label;
+const classShort = key => (CLASSES.find(c=>c.key===key)||{short:key}).short;
+const GATED = !!(CONFIG.masterPin || (CONFIG.teachers||[]).some(t=>t.pin));
 
 /* ================= COOL DOWN DATA ================= */
 const UNITS = window.UNITS || [];
@@ -174,7 +187,7 @@ const pick = a => a[Math.floor(Math.random()*a.length)];
 const isScored = it => it.type !== "open" && it.scored !== false;
 
 const U0 = (UNITS[0]||{}).id, C0 = (CD[0]||{}).id;
-const S = { view:"student", step:"pick", unit:U0, cd:C0, period:"4th Block", name:"", t:{unit:U0, cd:C0, period:"All"}, last:null, csv:"", unlocked:false, pinErr:false };
+const S = { view:"student", step:"pick", unit:"", cd:"", period:(OPEN_CLASSES.length===1?OPEN_CLASSES[0].key:""), name:"", t:{unit:U0, cd:C0, period:"All"}, last:null, csv:"", unlocked:false, pinErr:false };
 
 /* storage */
 function loadLocal(){ try{ return JSON.parse(localStorage.getItem("cd_responses")||"[]"); }catch(e){ return []; } }
@@ -344,7 +357,7 @@ function pctFor(c, answers){
 }
 function latest(cdId, period){
   const m = new Map();
-  RESP.filter(r=>r.cd===cdId && (period==="All"||r.period===period)).sort((a,b)=>a.ts-b.ts).forEach(r=>m.set(r.period+"|"+r.name,r));
+  RESP.filter(r=>r.cd===cdId && (period==="All" ? (!GATED || !S.scope || S.scope.includes(r.period)) : r.period===period)).sort((a,b)=>a.ts-b.ts).forEach(r=>m.set(r.period+"|"+r.name,r));
   return [...m.values()];
 }
 
@@ -376,22 +389,23 @@ function graphSvg(g){
 /* ================= STUDENT VIEW ================= */
 function renderStudent(){
   if(S.step==="pick"){
+    if(!OPEN_CLASSES.some(c=>c.key===S.period)) S.period = OPEN_CLASSES.length===1 ? OPEN_CLASSES[0].key : "";
     const names = CONFIG.roster[S.period]||[];
     if(!names.includes(S.name)) S.name = "";
+    const btn = (act,val,inner,on) => `<button type="button" class="pbtn${on?" on":""}" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on?"true":"false"}">${inner}</button>`;
+    const step = (id,n,title,body) => `<div class="pstep" id="${id}" tabindex="-1"><h3><span class="pn">${n}</span>${title}</h3>${body}</div>`;
+    let n = 1, h = "";
+    if(OPEN_CLASSES.length>1) h += step("st-class",n++,"Choose your class",`<div class="pgrid" role="group" aria-label="Class">${OPEN_CLASSES.map(c=>btn("pickClass",c.key,esc(c.label),c.key===S.period)).join("")}</div>`);
+    if(S.period) h += step("st-unit",n++,"Choose your unit",`<div class="pgrid" role="group" aria-label="Unit">${UNITS.map(u=>btn("pickUnit",u.id,esc(u.title),u.id===S.unit)).join("")}</div>`);
+    if(S.period && S.unit) h += step("st-lesson",n++,"Choose your lesson",`<div class="pgrid wide" role="group" aria-label="Lesson">${cdsOf(S.unit).map(c=>{ const [a,b2] = c.title.split(": "); return btn("pickCd",c.id,b2?`<b>${esc(a)}</b><span class="pt">${esc(b2)}</span>`:esc(c.title),c.id===S.cd); }).join("")}</div>`);
+    if(S.period && S.unit && S.cd) h += step("st-name",n++,"Tap your name",`<div class="pgrid" role="group" aria-label="Your name">${names.map(nm=>btn("pickName",nm,esc(nm),nm===S.name)).join("")}</div>`);
+    if(S.period && S.unit && S.cd && S.name) h += `<div class="pstep" id="st-start" tabindex="-1"><p class="pick-sum">You’re starting <b>${esc(getCD(S.cd).title)}</b> as <b>${esc(S.name)}</b>.</p><button class="btn" data-act="start">Start cool down</button></div>`;
     return `
-    ${CONFIG.form.action?"":`<div class="demo"><b>Demo mode.</b> Responses are saved only in this browser. When this is on GitHub Pages and connected to your Google Form, they go to your Sheet instead. The Lesson 3 and Lesson 6 answer keys are still drafts.</div>`}
+    ${CONFIG.form.action?"":`<div class="demo"><b>Demo mode.</b> Responses are saved only in this browser. When this is on GitHub Pages and connected to your Google Form, they go to your Sheet instead.</div>`}
     <section class="card">
       <h2>Today’s cool down</h2>
-      <p class="sub">Pick your class and your name, then start.</p>
-      <label class="f" for="selunit">Unit</label>
-      <select id="selunit" data-bind="unit">${UNITS.map(u=>`<option value="${u.id}" ${u.id===S.unit?"selected":""}>${esc(u.title)}</option>`).join("")}</select>
-      <label class="f" for="selcd">Cool down</label>
-      <select id="selcd" data-bind="cd">${cdsOf(S.unit).map(c=>`<option value="${c.id}" ${c.id===S.cd?"selected":""}>${esc(c.title)}</option>`).join("")}</select>
-      <label class="f" for="selper">Class period</label>
-      <select id="selper" data-bind="period">${Object.keys(CONFIG.roster).map(p=>`<option ${p===S.period?"selected":""}>${p}</option>`).join("")}</select>
-      <label class="f" for="selname">Your name</label>
-      <select id="selname" data-bind="name"><option value="">Choose your name</option>${names.map(n=>`<option ${n===S.name?"selected":""}>${esc(n)}</option>`).join("")}</select>
-      <button class="btn" data-act="start" ${S.name?"":"disabled"}>Start cool down</button>
+      <p class="sub">Tap your choices, one step at a time.</p>
+      ${h}
     </section>`;
   }
   const c = getCD(S.cd);
@@ -399,7 +413,7 @@ function renderStudent(){
     return `
     <section class="card">
       <h2>${esc(c.title)}</h2>
-      <div class="who"><span>${esc(S.name)}</span><span>${esc(S.period)}</span></div>
+      <div class="who"><span>${esc(S.name)}</span><span>${esc(classLabel(S.period))}</span></div>
       <p>${c.intro}</p>
       ${c.graph?graphSvg(c.graph):""}
       ${c.items.map(renderItem).join("")}
@@ -447,7 +461,7 @@ async function submitForm(){
 }
 
 /* ================= TEACHER VIEW ================= */
-const rosterIdx = nm => { for(const list of Object.values(CONFIG.roster)){ const k=list.indexOf(nm); if(k>=0) return k; } return 999; };
+const rosterIdx = nm => { const [base,suf] = String(nm).split(" · "); const ci = suf ? Math.max(0,CLASSES.findIndex(c=>c.short===suf)) : 0; for(const list of Object.values(CONFIG.roster)){ const k=list.indexOf(base); if(k>=0) return ci*1000+k; } return ci*1000+999; };
 const byRoster = (a,b) => rosterIdx(a)-rosterIdx(b) || String(a).localeCompare(String(b));
 const chips = names => [...names].sort(byRoster).map(n=>`<span class="chip">${esc(n)}</span>`).join("");
 
@@ -472,16 +486,22 @@ function breakdown(it, rs){
   return rows.map(r=>({...r, pct: n?Math.round(100*r.n/n):0}));
 }
 function renderTeacher(){
-  if(CONFIG.teacherPin && !S.unlocked){ return `<section class="card"><h2>Teacher view</h2><p class="sub">Enter the teacher PIN to see class results.</p><label class="f" for="pin">PIN</label><input type="password" id="pin" inputmode="numeric" autocomplete="off" aria-describedby="pinmsg"><p id="pinmsg" class="mark no" role="alert">${S.pinErr?"That PIN didn’t work. Try again.":""}</p><button class="btn" data-act="unlock">Unlock</button></section>`; }
-  const c = getCD(S.t.cd), rs = latest(c.id, S.t.period), n = rs.length;
-  const periods = ["All", ...Object.keys(CONFIG.roster)];
+  if(GATED && !S.unlocked){ return `<section class="card"><h2>Teacher view</h2><p class="sub">Enter your teacher PIN to see class results.</p><label class="f" for="pin">PIN</label><input type="password" id="pin" inputmode="numeric" autocomplete="off" aria-describedby="pinmsg"><p id="pinmsg" class="mark no" role="alert">${S.pinErr?"That PIN didn’t work. Try again.":""}</p><button class="btn" data-act="unlock">Unlock</button></section>`; }
+  const c = getCD(S.t.cd), rs0 = latest(c.id, S.t.period);
+  const scopeClasses = CLASSES.filter(cl=>cl.roster.length && (!GATED || !S.scope || S.scope.includes(cl.key)));
+  const multi = S.t.period==="All" && scopeClasses.length>1;
+  const rs = multi ? rs0.map(r=>({...r, name:r.name+" · "+classShort(r.period)})) : rs0, n = rs.length;
+  const cdCounts = {}; CD.forEach(x=>{ cdCounts[x.id] = latest(x.id, S.t.period).length; });
+  const tbtn = (act,val,inner,on) => `<button type="button" class="pbtn sm${on?" on":""}" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on?"true":"false"}">${inner}</button>`;
   let h = `
   <section class="card">
     <h2>Class results</h2>
-    <div class="ctl">
-      <div><label class="f" for="tunit">Unit</label><select id="tunit" data-bind="t.unit">${UNITS.map(u=>`<option value="${u.id}" ${u.id===S.t.unit?"selected":""}>${esc(u.title)}</option>`).join("")}</select></div>
-      <div><label class="f" for="tcd">Cool down</label><select id="tcd" data-bind="t.cd">${cdsOf(S.t.unit).map(x=>`<option value="${x.id}" ${x.id===c.id?"selected":""}>${esc(x.title)}</option>`).join("")}</select></div>
-      <div><label class="f" for="tper">Class</label><select id="tper" data-bind="t.period">${periods.map(p=>`<option ${p===S.t.period?"selected":""}>${p}</option>`).join("")}</select></div>
+    ${scopeClasses.length>1 ? `<div class="tlabel" id="tl-class">Class</div><div class="pgrid sm" role="group" aria-labelledby="tl-class">${tbtn("tClass","All",((GATED && S.scope) ? "All my classes" : "All classes"),S.t.period==="All")}${scopeClasses.map(cl=>tbtn("tClass",cl.key,esc(cl.label),cl.key===S.t.period)).join("")}</div>` : ""}
+    <div class="tlabel" id="tl-unit">Unit</div>
+    <div class="pgrid sm" role="group" aria-labelledby="tl-unit">${UNITS.map(u=>{ const k=cdsOf(u.id).filter(x=>cdCounts[x.id]>0).length; return tbtn("tUnit",u.id,esc(u.title)+(k?`<span class="dot" title="Has responses"></span>`:""),u.id===S.t.unit); }).join("")}</div>
+    <div class="tlabel" id="tl-cd">Lesson</div>
+    <div class="pgrid sm wide" role="group" aria-labelledby="tl-cd">${cdsOf(S.t.unit).map(x=>{ const [a,b2]=x.title.split(": "); const k=cdCounts[x.id]; return tbtn("tCd",x.id,`<b>${esc(a)}</b><span class="pt">${esc(b2||"")}</span>${k?`<span class="bd">${k} submitted</span>`:`<span class="bd none">no responses</span>`}`,x.id===c.id); }).join("")}</div>
+    <div class="ctl" style="margin-top:16px">
       ${CONFIG.form.action ? `${CONFIG.resultsCsv?`<button class="btn alt" data-act="refresh">Refresh results</button>`:""}<div><label class="f" for="resfile">Results file (CSV from your Sheet)</label><input type="file" id="resfile" accept=".csv,text/csv"></div>` : `<button class="btn alt" data-act="sample">Add sample responses</button><button class="btn alt" data-act="clear">Clear this cool down</button>`}
     </div>
     ${S.loadErr?`<div class="demo">${S.loadErr}</div>`:""}
@@ -492,6 +512,10 @@ function renderTeacher(){
   const scored = c.items.filter(isScored);
   const avg = Math.round(rs.reduce((s,r)=>s+pctFor(c,r.answers),0)/n);
   h += `<div class="stats"><div class="stat"><b>${n}</b><span>students submitted</span></div>${scored.length?`<div class="stat"><b>${avg}%</b><span>class average</span></div>`:""}</div></section>`;
+  if(multi && scored.length){
+    const trs = scopeClasses.map(cl=>{ const g = rs0.filter(r=>r.period===cl.key); return g.length ? `<tr><td>${esc(cl.label)}</td><td>${g.length}</td><td>${Math.round(g.reduce((t,r)=>t+pctFor(c,r.answers),0)/g.length)}%</td></tr>` : ""; }).join("");
+    if(trs) h += `<section class="card"><h2>By class</h2><table class="t"><tr><th>Class</th><th>Submitted</th><th>Average</th></tr>${trs}</table></section>`;
+  }
 
   // groups
   const G = {g:[],a:[],n:[]};
@@ -532,7 +556,7 @@ function buildCsv(){
   its.forEach(it=>{head.push((it.label||it.id)+" answer"); if(isScored(it)) head.push((it.label||it.id)+" correct");});
   const lines = [head.map(q).join(",")];
   rs.forEach(r=>{
-    const row=[new Date(r.ts).toLocaleString(), c.title, r.period, r.name, pctFor(c,r.answers)];
+    const row=[new Date(r.ts).toLocaleString(), c.title, classLabel(r.period), r.name, pctFor(c,r.answers)];
     its.forEach(it=>{
       const a=r.answers[it.id]||""; const o = it.type==="mc"?it.options.find(o=>o.id===a):null;
       row.push(it.type==="multi" ? a.split(",").filter(Boolean).map(i=>strip((it.options.find(o=>o.id===i)||{t:i}).t)).join("; ") : (o?strip(o.t):a)); if(isScored(it)) row.push(score(it,a).correct?1:0);
@@ -564,14 +588,19 @@ function addSample(){
 }
 
 /* ================= WIRING ================= */
+function reveal(id){ setTimeout(()=>{ const e=document.getElementById(id); if(!e) return; e.scrollIntoView({behavior:(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)?"auto":"smooth",block:"nearest"}); e.focus({preventScroll:true}); },0); }
 async function tryUnlock(){
-  const el = document.getElementById("pin");
-  if(el && el.value.trim() === String(CONFIG.teacherPin)){ S.unlocked = true; S.pinErr = false; await loadRemote(); render(); }
+  const el = document.getElementById("pin"), v = ((el&&el.value)||"").trim();
+  let scope;
+  if(v && CONFIG.masterPin && v===String(CONFIG.masterPin)) scope = null;
+  else { const t = (CONFIG.teachers||[]).find(t=>t.pin && String(t.pin)===v); if(v && t) scope = CLASSES.filter(c=>c.teacher===t.name).map(c=>c.key); }
+  if(scope!==undefined){ S.unlocked = true; S.scope = scope; S.pinErr = false; S.t.period = "All"; await loadRemote(); render(); }
   else { S.pinErr = true; render(); setTimeout(()=>{ const e=document.getElementById("pin"); if(e) e.focus(); },0); }
 }
 $app.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="pin") tryUnlock(); });
 function render(){
   if(!UNITS.length){ $app.innerHTML = `<section class="card"><h2>The cool down files didn’t load</h2><p>This page needs the file <b>units/unit5.js</b>. It is missing or in the wrong place in your GitHub repository.</p><p class="sub">In the repository, the file must be named <b>unit5.js</b> and sit inside a folder named <b>units</b>, next to index.html.</p></section>`; return; }
+  if(!CLASSES.length){ $app.innerHTML = `<section class="card"><h2>The setup file didn’t load</h2><p>This page needs the file <b>config.js</b> (your classes, rosters and Google Form links). It is missing or in the wrong place in your GitHub repository.</p><p class="sub">It must be named <b>config.js</b> and sit next to index.html.</p></section>`; return; }
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===S.view)));
   $app.innerHTML = S.view==="student" ? renderStudent() : renderTeacher();
 }
@@ -588,12 +617,19 @@ $app.addEventListener("change", e=>{
 document.addEventListener("click", async e=>{
   const el = e.target.closest("[data-act]"); if(!el) return;
   const a = el.dataset.act;
-  if(a==="view"){ S.view = el.dataset.v; if(S.view==="student"){ S.unlocked=false; S.pinErr=false; } if(S.view==="teacher" && (S.unlocked||!CONFIG.teacherPin)) await loadRemote(); render(); }
+  if(a==="view"){ S.view = el.dataset.v; if(S.view==="student"){ S.unlocked=false; S.pinErr=false; } if(S.view==="teacher" && (S.unlocked||!GATED)) await loadRemote(); render(); }
   else if(a==="unlock"){ tryUnlock(); }
-  else if(a==="start"){ S.step="form"; render(); window.scrollTo(0,0); }
+  else if(a==="tClass"){ S.t.period=el.dataset.v; S.csv=""; render(); }
+  else if(a==="tUnit"){ if(S.t.unit!==el.dataset.v){ S.t.unit=el.dataset.v; const list=cdsOf(S.t.unit); const withData=list.find(x=>latest(x.id,S.t.period).length>0); S.t.cd=(withData||list[0]).id; S.csv=""; } render(); }
+  else if(a==="tCd"){ S.t.cd=el.dataset.v; S.csv=""; render(); }
+  else if(a==="pickClass"){ if(S.period!==el.dataset.v){ S.period=el.dataset.v; S.name=""; } render(); reveal("st-unit"); }
+  else if(a==="pickUnit"){ if(S.unit!==el.dataset.v){ S.unit=el.dataset.v; S.cd=""; } render(); reveal("st-lesson"); }
+  else if(a==="pickCd"){ S.cd=el.dataset.v; render(); reveal(S.name?"st-start":"st-name"); }
+  else if(a==="pickName"){ S.name=el.dataset.v; render(); reveal("st-start"); }
+  else if(a==="start"){ if(!S.cd||!S.name||!S.period) return; S.step="form"; render(); window.scrollTo(0,0); }
   else if(a==="submit") submitForm();
   else if(a==="refresh"){ el.textContent="Refreshing…"; await loadRemote(); render(); }
-  else if(a==="again"){ S.step="pick"; S.name=""; render(); }
+  else if(a==="again"){ S.step="pick"; S.name=""; S.unit=""; S.cd=""; render(); }
   else if(a==="sample"){ addSample(); S.csv=""; render(); }
   else if(a==="clear"){ RESP = RESP.filter(r=>r.cd!==S.t.cd); saveLocal(RESP); S.csv=""; render(); }
   else if(a==="csv"){ S.csv = buildCsv(); render(); }
