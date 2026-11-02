@@ -168,6 +168,13 @@ if(!CONFIG.masterPin && CONFIG.teacherPin) CONFIG.masterPin = CONFIG.teacherPin;
 const CLASSES = (CONFIG.classes||[]).map(c=>({...c, roster:c.roster||[], label:c.teacher+" · "+c.block, short:c.teacher+" "+String(c.block).replace(" Block","")}));
 CONFIG.roster = Object.fromEntries(CLASSES.map(c=>[c.key,c.roster]));
 const OPEN_CLASSES = CLASSES.filter(c=>c.roster.length);
+/* Student links: ?teacher=barrera shows only that teacher's classes; ?class=barrera-1st-block shows one class. */
+const slug = x => String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const QS = new URLSearchParams(window.location.search);
+const wantClass = slug(QS.get("class")), wantTeacher = slug(QS.get("teacher"));
+let VISIBLE = OPEN_CLASSES;
+if(wantClass){ const m = OPEN_CLASSES.filter(c=>slug(c.label)===wantClass); if(m.length) VISIBLE = m; }
+else if(wantTeacher){ const m = OPEN_CLASSES.filter(c=>slug(c.teacher)===wantTeacher); if(m.length) VISIBLE = m; }
 const classLabel = key => (CLASSES.find(c=>c.key===key)||{label:key}).label;
 const classShort = key => (CLASSES.find(c=>c.key===key)||{short:key}).short;
 const GATED = !!(CONFIG.masterPin || (CONFIG.teachers||[]).some(t=>t.pin));
@@ -187,7 +194,7 @@ const pick = a => a[Math.floor(Math.random()*a.length)];
 const isScored = it => it.type !== "open" && it.scored !== false;
 
 const U0 = (UNITS[0]||{}).id, C0 = (CD[0]||{}).id;
-const S = { view:"student", step:"pick", unit:"", cd:"", period:(OPEN_CLASSES.length===1?OPEN_CLASSES[0].key:""), name:"", t:{unit:U0, cd:C0, period:"All"}, last:null, csv:"", unlocked:false, pinErr:false };
+const S = { view:"student", step:"pick", unit:"", cd:"", period:(VISIBLE.length===1?VISIBLE[0].key:""), name:"", t:{unit:U0, cd:C0, period:"All"}, last:null, csv:"", unlocked:false, pinErr:false };
 
 /* storage */
 function loadLocal(){ try{ return JSON.parse(localStorage.getItem("cd_responses")||"[]"); }catch(e){ return []; } }
@@ -389,13 +396,13 @@ function graphSvg(g){
 /* ================= STUDENT VIEW ================= */
 function renderStudent(){
   if(S.step==="pick"){
-    if(!OPEN_CLASSES.some(c=>c.key===S.period)) S.period = OPEN_CLASSES.length===1 ? OPEN_CLASSES[0].key : "";
+    if(!VISIBLE.some(c=>c.key===S.period)) S.period = VISIBLE.length===1 ? VISIBLE[0].key : "";
     const names = CONFIG.roster[S.period]||[];
     if(!names.includes(S.name)) S.name = "";
     const btn = (act,val,inner,on) => `<button type="button" class="pbtn${on?" on":""}" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on?"true":"false"}">${inner}</button>`;
     const step = (id,n,title,body) => `<div class="pstep" id="${id}" tabindex="-1"><h3><span class="pn">${n}</span>${title}</h3>${body}</div>`;
     let n = 1, h = "";
-    if(OPEN_CLASSES.length>1) h += step("st-class",n++,"Choose your class",`<div class="pgrid" role="group" aria-label="Class">${OPEN_CLASSES.map(c=>btn("pickClass",c.key,esc(c.label),c.key===S.period)).join("")}</div>`);
+    if(VISIBLE.length>1) h += step("st-class",n++,"Choose your class",`<div class="pgrid" role="group" aria-label="Class">${VISIBLE.map(c=>btn("pickClass",c.key,esc(c.label),c.key===S.period)).join("")}</div>`);
     if(S.period) h += step("st-unit",n++,"Choose your unit",`<div class="pgrid" role="group" aria-label="Unit">${UNITS.map(u=>btn("pickUnit",u.id,esc(u.title),u.id===S.unit)).join("")}</div>`);
     if(S.period && S.unit) h += step("st-lesson",n++,"Choose your lesson",`<div class="pgrid wide" role="group" aria-label="Lesson">${cdsOf(S.unit).map(c=>{ const [a,b2] = c.title.split(": "); return btn("pickCd",c.id,b2?`<b>${esc(a)}</b><span class="pt">${esc(b2)}</span>`:esc(c.title),c.id===S.cd); }).join("")}</div>`);
     if(S.period && S.unit && S.cd) h += step("st-name",n++,"Tap your name",`<div class="pgrid" role="group" aria-label="Your name">${names.map(nm=>btn("pickName",nm,esc(nm),nm===S.name)).join("")}</div>`);
