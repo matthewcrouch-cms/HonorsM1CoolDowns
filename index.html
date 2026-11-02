@@ -68,6 +68,9 @@ select:focus,input:focus,textarea:focus,button:focus-visible,.opt:has(input:focu
 .pbtn.on{background:var(--good-bg);border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .pbtn:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 .pick-sum{margin:6px 0 0}
+.welcome{background:var(--good-bg);border-left:5px solid var(--blue);border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:2px}
+.welcome b{font-family:"Bricolage Grotesque","Atkinson Hyperlegible",system-ui,sans-serif;font-size:1.6rem;line-height:1.15}
+.welcome span{color:var(--muted);font-size:.95rem}
 .tlabel{font-weight:700;margin:16px 0 8px}
 .pgrid.sm{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
 .pgrid.sm.wide{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
@@ -393,6 +396,13 @@ function graphSvg(g){
   return `<div class="graph">${s}</div>`;
 }
 
+/* the teacher whose class the student is in (from their link, or from the class they tap) */
+function teacherNow(){
+  const sel = S.period ? CLASSES.find(c=>c.key===S.period) : null;
+  if(sel) return sel.teacher;
+  if(VISIBLE!==OPEN_CLASSES && VISIBLE.length && VISIBLE.every(c=>c.teacher===VISIBLE[0].teacher)) return VISIBLE[0].teacher;
+  return "";
+}
 /* ================= STUDENT VIEW ================= */
 function renderStudent(){
   if(S.step==="pick"){
@@ -410,6 +420,7 @@ function renderStudent(){
     return `
     ${CONFIG.form.action?"":`<div class="demo"><b>Demo mode.</b> Responses are saved only in this browser. When this is on GitHub Pages and connected to your Google Form, they go to your Sheet instead.</div>`}
     <section class="card">
+      ${(VISIBLE!==OPEN_CLASSES && VISIBLE.length && VISIBLE.every(c=>c.teacher===VISIBLE[0].teacher)) ? `<div class="welcome"><span>Welcome to</span><b>${esc(VISIBLE[0].teacher)}’s ${VISIBLE.length>1?"classes":"class"}</b>${VISIBLE.length===1?`<span>${esc(VISIBLE[0].block)}</span>`:""}</div>` : ""}
       <h2>Today’s cool down</h2>
       <p class="sub">Tap your choices, one step at a time.</p>
       ${h}
@@ -608,6 +619,7 @@ $app.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="pin")
 function render(){
   if(!UNITS.length){ $app.innerHTML = `<section class="card"><h2>The cool down files didn’t load</h2><p>This page needs the file <b>units/unit5.js</b>. It is missing or in the wrong place in your GitHub repository.</p><p class="sub">In the repository, the file must be named <b>unit5.js</b> and sit inside a folder named <b>units</b>, next to index.html.</p></section>`; return; }
   if(!CLASSES.length){ $app.innerHTML = `<section class="card"><h2>The setup file didn’t load</h2><p>This page needs the file <b>config.js</b> (your classes, rosters and Google Form links). It is missing or in the wrong place in your GitHub repository.</p><p class="sub">It must be named <b>config.js</b> and sit next to index.html.</p></section>`; return; }
+  const sm = document.querySelector(".brand small"); if(sm){ const t = S.view==="student" ? teacherNow() : ""; sm.textContent = "H. Math 1" + (t ? " · " + t : ""); }
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===S.view)));
   $app.innerHTML = S.view==="student" ? renderStudent() : renderTeacher();
 }
