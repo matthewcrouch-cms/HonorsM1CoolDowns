@@ -38,15 +38,20 @@ window.CONFIG_LOCAL = {
       "Zoie N.","Paula N.","Uchechi N.","Yaduraj P.","Jackson P.","Asha R.","Crystal S.","Isaiah T.","Davien T.","Ellis W." ] },
 
     { key: "Barrera - 1st Block",   teacher: "Barrera",   block: "1st Block", roster: [
-      /* paste names here, like "Ava B.", "Ben C.", */ ] },
+      "Marcus D.","Aaron G.","Kendrick H.","Catarina J.","Jahlleyah K.","Natalia L.","Aydan N.","Jaiden N.","Miguel O.",
+      "Leslie P.","Nataly R.","Cole R.","Alex R.","Rio R.","Eisley V.","Ava W.","Oleksandra Z." ] },
 
     { key: "Barrera - 2nd Block",   teacher: "Barrera",   block: "2nd Block", roster: [
-      /* paste names here */ ] },
+      "Shaira A.","Alexandra A.","Sofiia B.","Hailey C.","Matey D.","Juliana F.","Emily G.","Acadia G.","Eli H.",
+      "Zachary I.","Stephanie J.","Milo L.","Mila M.","Keaton M.","Adriana R.","Bella S.","Saisha T.","Upasana T.",
+      "Landon T.","Analia T.","Mark T.","Piper Z." ] },
 
     { key: "Jones - 4th Block",     teacher: "Jones",     block: "4th Block", roster: [
-      /* paste names here */ ] },
+      "Vincent A.","Austen A.","Amelia G.","Hailey G.","Pardha G.","Mika G.","Angel I.","Arda K.","Wiliam K.",
+      "Alaina L.","Shamaya M.","Valentina P.","Mahi P.","Santiago P.","Lavinaia P.","Brandon V.","Gabriela Z." ] },
 
     { key: "Kosanovich - 4th Block", teacher: "Kosanovich", block: "4th Block", roster: [
-      /* paste names here */ ] }
+      "Agata A.","Elijah A.","Yareth B.","Max B.","Lanaudia B.","Saida C.","Teresa H.","Mikaela M.",
+      "Kayden M.","Steven P.","Keily P.","Kruthi P.","John R.","Audrey S.","Adhya S.","Aliza T." ] }
   ]
 };
