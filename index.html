@@ -149,6 +149,7 @@ details summary{cursor:pointer;font-weight:700}
 select.ovsel{width:auto;max-width:100%;padding:4px 8px;font-size:.88rem}
 .ovlist{margin-top:12px;font-size:.92rem}
 .ovlist li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.ovkey{margin:8px 0 0 1.1em}
 .ovnote{color:var(--muted);font-size:.88rem;margin:4px 0 0 1.1em}
 textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;min-height:140px;margin-top:10px}
 @media (max-width:560px){.bkrow{grid-template-columns:minmax(0,1fr) 80px 38px}}
@@ -525,6 +526,8 @@ const rosterIdx = nm => { const [base,suf] = String(nm).split(" · "); const ci 
 const byRoster = (a,b) => rosterIdx(a)-rosterIdx(b) || String(a).localeCompare(String(b));
 const chips = names => [...names].sort(byRoster).map(n=>`<span class="chip">${esc(n)}</span>`).join("");
 
+/* the intended answer, shown beside "Other" answers so a teacher can compare before re-scoring */
+const keyText = it => it.display || (it.accepted||[]).join(" or ") || "";
 function breakdown(it, rs){
   const n = rs.length, rows = [];
   if(it.type==="multi"){
@@ -597,7 +600,7 @@ function renderTeacher(){
     const rows = breakdown(it, rs);
     const right = isScored(it)? rs.filter(r=>score(it,r.answers[it.id]).correct).length : null;
     h += `<div class="item"><div class="ih"><p class="stem"><span class="lab">${esc(it.label||"")}</span>${it.stem}</p>${right!==null?`<span class="pct">${Math.round(100*right/n)}% <span class="sub">(${right} of ${n})</span></span>`:`<span class="sub">Not scored</span>`}</div>
-      <div class="bk">${rows.map(r=>{ const inner=`<div>${r.n?`<span class="car">▸</span>`:""}${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span>`; if(r.n && r.others) return `<details class="bkd" open><summary class="bkrow">${inner}</summary><p class="ovnote">What each student typed. If an answer is really fine, count it as correct. If it shows a misconception, tag it.</p><ul class="oth">${r.others.map(o=>{ const d=`data-it="${esc(it.id)}" data-raw="${esc(o.a)}"`; return `<li><span class="ans">${esc(o.a)}</span><span class="wholist">${chips(o.names)}</span><span class="ovact"><button type="button" class="btn alt xs" data-act="ovC" ${d}>Count as correct</button><select class="ovsel" ${d} aria-label="Tag this answer as a misconception"><option value="">Tag as misconception…</option>${r.tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}<option value="__new">New misconception…</option></select></span></li>`; }).join("")}</ul></details>`;
+      <div class="bk">${rows.map(r=>{ const inner=`<div>${r.n?`<span class="car">▸</span>`:""}${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span>`; if(r.n && r.others) return `<details class="bkd" open><summary class="bkrow">${inner}</summary>${keyText(it)?`<p class="ovkey"><b>Answer key:</b> <span class="ans">${esc(keyText(it))}</span></p>`:""}<p class="ovnote">What each student typed. If an answer is really fine, count it as correct. If it shows a misconception, tag it.</p><ul class="oth">${r.others.map(o=>{ const d=`data-it="${esc(it.id)}" data-raw="${esc(o.a)}"`; return `<li><span class="ans">${esc(o.a)}</span><span class="wholist">${chips(o.names)}</span><span class="ovact"><button type="button" class="btn alt xs" data-act="ovC" ${d}>Count as correct</button><select class="ovsel" ${d} aria-label="Tag this answer as a misconception"><option value="">Tag as misconception…</option>${r.tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}<option value="__new">New misconception…</option></select></span></li>`; }).join("")}</ul></details>`;
         return r.n ? `<details class="bkd"><summary class="bkrow">${inner}</summary><div class="wholist">${chips(r.names||[])}</div></details>` : `<div class="bkrow">${inner}</div>`; }).join("")}</div>${(()=>{ const dec=Object.entries(OV).filter(([k])=>k.startsWith(it.id+"|")).map(([k,o])=>o); return dec.length ? `<div class="ovlist"><b>Your scoring decisions for this question</b><ul>${dec.map(o=>`<li><span class="ans">${esc(o.raw||o.ans)}</span><span>${o.v==="c"?"counts as correct":"tagged: "+esc(o.tag)}</span><button type="button" class="btn alt xs" data-act="ovU" data-it="${esc(it.id)}" data-raw="${esc(o.ans)}">Undo</button></li>`).join("")}</ul></div>` : ""; })()}</div>`;
   });
   if(c.items.some(it=>it.type!=="open")) h += `</section>`;
