@@ -139,6 +139,17 @@ table.t th{background:var(--bg)}
 .open li{margin-bottom:8px}
 .open .nm{color:var(--muted);font-size:.88rem}
 details summary{cursor:pointer;font-weight:700}
+.oth,.ovlist ul{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:8px}
+.oth{margin-left:1.1em}
+.oth li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-left:4px solid var(--neutral);border-radius:8px;background:var(--bg)}
+.oth .wholist{padding:0;flex:1 1 140px}
+.ans{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 8px;overflow-wrap:anywhere}
+.ovact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn.alt.xs{padding:4px 10px;font-size:.88rem}
+select.ovsel{width:auto;max-width:100%;padding:4px 8px;font-size:.88rem}
+.ovlist{margin-top:12px;font-size:.92rem}
+.ovlist li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.ovnote{color:var(--muted);font-size:.88rem;margin:4px 0 0 1.1em}
 textarea.csv{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;min-height:140px;margin-top:10px}
 @media (max-width:560px){.bkrow{grid-template-columns:minmax(0,1fr) 80px 38px}}
 @media (prefers-reduced-motion: no-preference){.fill{transition:width .4s ease}}
@@ -204,6 +215,28 @@ function loadLocal(){ try{ return JSON.parse(localStorage.getItem("cd_responses"
 function saveLocal(r){ try{ localStorage.setItem("cd_responses", JSON.stringify(r)); return true; }catch(e){ return false; } }
 let RESP = CONFIG.form.action ? [] : loadLocal();
 
+/* teacher scoring decisions: an "Other answer" a teacher counted as correct or tagged as a misconception.
+   Each decision is an event {ts,item,ans,raw,v,tag}; v is "c" (correct), "t" (tagged) or "x" (undone). The newest event per answer wins.
+   Events are kept in this browser and also sent to the Google Form as a row whose cool down is "__override", so every teacher device sees them. */
+const OV_CD = "__override";
+const ansKey = a => String(a ?? "").trim().toLowerCase().replace(/\s+/g," ");
+function loadOvLocal(){ try{ return JSON.parse(localStorage.getItem("cd_overrides")||"[]"); }catch(e){ return []; } }
+let OV_LOCAL = loadOvLocal(), OV_REMOTE = [], OV = {};
+function rebuildOv(){
+  OV = {};
+  [...OV_REMOTE, ...OV_LOCAL].filter(e=>e && e.item && e.ans!=null).sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(e=>{
+    const k = e.item+"|"+e.ans;
+    if(e.v==="c" || (e.v==="t" && e.tag)) OV[k] = e; else delete OV[k];
+  });
+}
+function setOv(item, raw, v, tag){
+  const e = {ts:Date.now(), item, ans:ansKey(raw), raw:String(raw).trim(), v}; if(tag) e.tag = tag;
+  OV_LOCAL.push(e); try{ localStorage.setItem("cd_overrides", JSON.stringify(OV_LOCAL)); }catch(err){}
+  rebuildOv();
+  sendRemote({cd:OV_CD, period:"__teacher", name:"__teacher", answers:e});
+}
+rebuildOv();
+
 async function sendRemote(rec){
   const f = CONFIG.form; if(!f.action) return;
   const body = new URLSearchParams();
@@ -221,7 +254,9 @@ function parseCsv(t){
   if(cur||row.length){row.push(cur);rows.push(row);} return rows;
 }
 function parseResp(t){
-  return parseCsv(t).slice(1).filter(x=>x.length>=5).map(x=>{ let a={}; try{a=JSON.parse(x[4]);}catch(e){} return {ts:Date.parse(x[0])||0, cd:x[1], period:x[2], name:x[3], answers:a}; });
+  const all = parseCsv(t).slice(1).filter(x=>x.length>=5).map(x=>{ let a={}; try{a=JSON.parse(x[4]);}catch(e){} return {ts:Date.parse(x[0])||0, cd:x[1], period:x[2], name:x[3], answers:a}; });
+  OV_REMOTE = all.filter(r=>r.cd===OV_CD).map(r=>r.answers); rebuildOv();
+  return all.filter(r=>r.cd!==OV_CD);
 }
 async function loadRemote(){
   if(!CONFIG.resultsCsv) return;
@@ -264,8 +299,15 @@ function numsIn(str){
 const uniqSorted = a => [...new Set(a.map(x=>Math.round(x*1e6)/1e6))].sort((x,y)=>x-y);
 const sameSet = (a,b) => { const x=uniqSorted(a), y=uniqSorted(b); return x.length===y.length && x.every((v,i)=>Math.abs(v-y[i])<=0.005); };
 
-/* scoring */
+/* scoring: the answer key decides first; a teacher decision can then re-score an answer the key filed under "Other answer" */
 function score(it, a){
+  const r = scoreBase(it, a);
+  if(r.key!=="__other") return r;
+  const o = OV[it.id+"|"+ansKey(a)];
+  if(!o) return r;
+  return o.v==="c" ? {correct:true,key:"__correct",ov:true} : {correct:false,key:"t:"+o.tag,tag:o.tag,ov:true};
+}
+function scoreBase(it, a){
   const blank = a===undefined || a===null || String(a).trim()==="";
   if(!isScored(it)) return {correct:null, key: blank?"__blank":(it.type==="mc"?a:"__open")};
   if(blank) return {correct:false, key:"__blank", tag:"No answer"};
@@ -496,9 +538,11 @@ function breakdown(it, rs){
     it.options.forEach(o=>rows.push({label:o.t, tag:o.tag, n:cnt[o.id]||0, names:who[o.id]||[], kind: !isScored(it)?"n":(o.id===it.correct?"c":"w")}));
   } else if(isScored(it)){
     rows.push({label:"Correct answer", n:cnt["__correct"]||0, names:who["__correct"]||[], kind:"c"});
-    const tags = [...new Set([...it.wrong.map(w=>w.tag), ...(it.negTag?[it.negTag]:[]), ...(it.simpTag?[it.simpTag]:[]), ...(it.trivialTag?[it.trivialTag]:[]), ...(it.partialTag?[it.partialTag]:[]), ...(it.checks?it.checks.map(c=>c.tag):[]), ...(it.bothTag?[it.bothTag]:[])])];
+    const tags = [...new Set([...(it.wrong||[]).map(w=>w.tag), ...(it.negTag?[it.negTag]:[]), ...(it.simpTag?[it.simpTag]:[]), ...(it.trivialTag?[it.trivialTag]:[]), ...(it.partialTag?[it.partialTag]:[]), ...(it.checks?it.checks.map(c=>c.tag):[]), ...(it.bothTag?[it.bothTag]:[]), ...Object.entries(OV).filter(([k,o])=>o.v==="t" && k.startsWith(it.id+"|")).map(([k,o])=>o.tag)])];
     tags.forEach(t=>rows.push({label:t, n:cnt["t:"+t]||0, names:who["t:"+t]||[], kind:"w"}));
-    rows.push({label:"Other answer", n:cnt["__other"]||0, names:who["__other"]||[], kind:"n"});
+    const og = new Map();
+    rs.forEach(r=>{ const a=r.answers[it.id]; if(score(it,a).key!=="__other") return; const k=ansKey(a); if(!og.has(k)) og.set(k,{a:String(a).trim(),names:[]}); og.get(k).names.push(r.name); });
+    rows.push({label:"Other answer", n:cnt["__other"]||0, names:who["__other"]||[], kind:"n", others:[...og.values()].sort((x,y)=>y.names.length-x.names.length), tags});
   }
   if(isScored(it)||it.type==="mc") rows.push({label:"No answer", n:cnt["__blank"]||0, names:who["__blank"]||[], kind:"n"});
   return rows.map(r=>({...r, pct: n?Math.round(100*r.n/n):0}));
@@ -553,7 +597,8 @@ function renderTeacher(){
     const rows = breakdown(it, rs);
     const right = isScored(it)? rs.filter(r=>score(it,r.answers[it.id]).correct).length : null;
     h += `<div class="item"><div class="ih"><p class="stem"><span class="lab">${esc(it.label||"")}</span>${it.stem}</p>${right!==null?`<span class="pct">${Math.round(100*right/n)}% <span class="sub">(${right} of ${n})</span></span>`:`<span class="sub">Not scored</span>`}</div>
-      <div class="bk">${rows.map(r=>{ const inner=`<div>${r.n?`<span class="car">▸</span>`:""}${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span>`; return r.n ? `<details class="bkd"><summary class="bkrow">${inner}</summary><div class="wholist">${chips(r.names||[])}</div></details>` : `<div class="bkrow">${inner}</div>`; }).join("")}</div></div>`;
+      <div class="bk">${rows.map(r=>{ const inner=`<div>${r.n?`<span class="car">▸</span>`:""}${r.label}${r.tag?`<span class="tg">${esc(r.tag)}</span>`:""}</div><div class="track"><div class="fill ${r.kind==="c"?"c":r.kind==="n"?"n":""}" style="width:${r.pct}%"></div></div><span class="cnt">${r.n}</span>`; if(r.n && r.others) return `<details class="bkd" open><summary class="bkrow">${inner}</summary><p class="ovnote">What each student typed. If an answer is really fine, count it as correct. If it shows a misconception, tag it.</p><ul class="oth">${r.others.map(o=>{ const d=`data-it="${esc(it.id)}" data-raw="${esc(o.a)}"`; return `<li><span class="ans">${esc(o.a)}</span><span class="wholist">${chips(o.names)}</span><span class="ovact"><button type="button" class="btn alt xs" data-act="ovC" ${d}>Count as correct</button><select class="ovsel" ${d} aria-label="Tag this answer as a misconception"><option value="">Tag as misconception…</option>${r.tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}<option value="__new">New misconception…</option></select></span></li>`; }).join("")}</ul></details>`;
+        return r.n ? `<details class="bkd"><summary class="bkrow">${inner}</summary><div class="wholist">${chips(r.names||[])}</div></details>` : `<div class="bkrow">${inner}</div>`; }).join("")}</div>${(()=>{ const dec=Object.entries(OV).filter(([k])=>k.startsWith(it.id+"|")).map(([k,o])=>o); return dec.length ? `<div class="ovlist"><b>Your scoring decisions for this question</b><ul>${dec.map(o=>`<li><span class="ans">${esc(o.raw||o.ans)}</span><span>${o.v==="c"?"counts as correct":"tagged: "+esc(o.tag)}</span><button type="button" class="btn alt xs" data-act="ovU" data-it="${esc(it.id)}" data-raw="${esc(o.ans)}">Undo</button></li>`).join("")}</ul></div>` : ""; })()}</div>`;
   });
   if(c.items.some(it=>it.type!=="open")) h += `</section>`;
 
@@ -625,6 +670,11 @@ function render(){
 }
 $app.addEventListener("change", e=>{
   if(e.target.id==="resfile"){ const f=e.target.files[0]; if(!f) return; f.text().then(t=>{ RESP=parseResp(t); S.csv=""; render(); }); return; }
+  if(e.target.classList.contains("ovsel")){
+    let tag = e.target.value; if(!tag) return;
+    if(tag==="__new"){ tag = (window.prompt("Name this misconception (a short phrase, like “Forgot to distribute the negative”):")||"").trim().slice(0,80); if(!tag){ e.target.value=""; return; } }
+    setOv(e.target.dataset.it, e.target.dataset.raw, "t", tag); S.csv=""; render(); return;
+  }
   const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
   if(b==="t.unit"){ S.t.unit = e.target.value; S.t.cd = cdsOf(S.t.unit)[0].id; }
   else if(b==="t.cd") S.t.cd = e.target.value; else if(b==="t.period") S.t.period = e.target.value;
@@ -651,6 +701,8 @@ document.addEventListener("click", async e=>{
   else if(a==="again"){ S.step="pick"; S.name=""; S.unit=""; S.cd=""; render(); }
   else if(a==="sample"){ addSample(); S.csv=""; render(); }
   else if(a==="clear"){ RESP = RESP.filter(r=>r.cd!==S.t.cd); saveLocal(RESP); S.csv=""; render(); }
+  else if(a==="ovC"){ setOv(el.dataset.it, el.dataset.raw, "c"); S.csv=""; render(); }
+  else if(a==="ovU"){ setOv(el.dataset.it, el.dataset.raw, "x"); S.csv=""; render(); }
   else if(a==="csv"){ S.csv = buildCsv(); render(); }
   else if(a==="copy"){ try{ await navigator.clipboard.writeText(S.csv); el.textContent="Copied"; }catch(err){ el.textContent="Select the text above and copy it"; } }
 });
